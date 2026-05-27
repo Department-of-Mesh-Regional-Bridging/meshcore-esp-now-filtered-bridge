@@ -20,6 +20,12 @@ namespace mesh {
       uint8_t blockedChannelCount = 0;
     };
 
+    // Statistics
+    static uint32_t bridgefilter_stats_tx_sent;
+    static uint32_t bridgefilter_stats_tx_blocked;
+    static uint32_t bridgefilter_stats_rx_received;
+    static uint32_t bridgefilter_stats_rx_blocked;
+
     // Policy
     static bool isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt);
     static bool isPolicyEnabled(const BridgeFilterPolicy &bridge_filter_policy) {

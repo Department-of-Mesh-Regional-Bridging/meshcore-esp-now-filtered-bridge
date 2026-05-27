@@ -499,9 +499,11 @@ void MyMesh::logTx(mesh::Packet *pkt, int len) {
   if (_prefs.bridge_pkt_src == 0) {
     if (mesh::PacketFilter::isPacketAllowed(_prefs.bridge_filter_policy, pkt)) {
       bridge.sendPacket(pkt);
-      PACKETFILTER_DEBUG_PRINTLN("Sent incoming packet to bridge");
+      PACKETFILTER_DEBUG_PRINTLN("Sent packet to bridge");
+      mesh::PacketFilter::bridgefilter_stats_tx_sent++; // Statistics
     } else {
-      PACKETFILTER_DEBUG_PRINTLN("Dropped outgoing packet to bridge");
+      PACKETFILTER_DEBUG_PRINTLN("Dropped packet to bridge");
+      mesh::PacketFilter::bridgefilter_stats_tx_blocked++; // Statistics
     }
   }
 #endif

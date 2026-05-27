@@ -5,6 +5,12 @@
 #endif
 
 namespace mesh {
+  // Statistics
+  uint32_t mesh::PacketFilter::bridgefilter_stats_tx_sent = 0;
+  uint32_t mesh::PacketFilter::bridgefilter_stats_tx_blocked = 0;
+  uint32_t mesh::PacketFilter::bridgefilter_stats_rx_received = 0;
+  uint32_t mesh::PacketFilter::bridgefilter_stats_rx_blocked = 0;
+
   // https://emn178.github.io/online-tools/sha256.html
   // Private key of Public channel: 8b3387e9c5cdea6ac9e5edbaa115cd72
   // SHA256=>1155f1870f91778646972b7bde747d989cf9f95416b50829666036563365424d
@@ -12,8 +18,7 @@ namespace mesh {
 
   // Payload : 11 5D4A8A5FA5912A52244139E36F0BB43612967906F13DE5692C1030885AECF285AD9B
   bool PacketFilter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
-    PACKETFILTER_DEBUG_PRINTLN("Route type: %s, Payload type: %s, First byte: %02x",
-                               pkt->getRouteTypeText(), pkt->getPayloadTypeText(), pkt->payload[0]);
+    PACKETFILTER_DEBUG_PRINTLN("Payload type: %s, first byte: %02x", pkt->getPayloadTypeText(), pkt->payload[0]);
 
     // Drop adverts
     if (isAdvertsBlocked(bridge_filter_policy) && pkt->getPayloadType() == PAYLOAD_TYPE_ADVERT) {
@@ -53,10 +58,9 @@ namespace mesh {
           // Decoded message
           char *message = (char *)&dest[5];
           PACKETFILTER_DEBUG_PRINTLN("Decoded message: %s", message);
-          PACKETFILTER_DEBUG_PRINTLN("Dropped Public message");
           return false; // Able to decode, it is a message in Public channel
         } else {        // Failed to decode
-          PACKETFILTER_DEBUG_PRINTLN("Failed to decode Public message");
+          PACKETFILTER_DEBUG_PRINTLN("Failed to decode. Not Public message");
         }
       }
 
