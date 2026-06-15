@@ -5,7 +5,7 @@
 #include <helpers/SensorManager.h>
 #include <helpers/ClientACL.h>
 #include <helpers/RegionMap.h>
-#include "BridgeFIlter.h"
+#include "helpers/bridges/BridgeFilter.h"
 
 #if defined(WITH_RS232_BRIDGE) || defined(WITH_ESPNOW_BRIDGE)
 #define WITH_BRIDGE
@@ -52,7 +52,7 @@ struct NodePrefs { // persisted to file
   uint32_t bridge_baud;   // 9600, 19200, 38400, 57600, 115200 (default 115200)
   uint8_t bridge_channel; // 1-14 (ESP-NOW only)
   char bridge_secret[16]; // for XOR encryption of bridge packets (ESP-NOW only)
-  mesh::BridgeFIlter::BridgeFilterPolicy bridge_filter_policy; // For bridge filtering
+  mesh::BridgeFilter::BridgeFilterPolicy bridge_filter_policy; // For bridge filtering
   // Power setting
   uint8_t powersaving_enabled; // boolean
   uint8_t reboot_interval; // hours, 0-255 (default 0=disable)

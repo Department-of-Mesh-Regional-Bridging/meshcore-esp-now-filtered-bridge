@@ -37,7 +37,7 @@
 
 #ifdef WITH_BRIDGE
 extern AbstractBridge* bridge;
-#include <BridgeFIlter.h>
+#include "helpers/bridges/BridgeFilter.h"
 #endif
 
 struct RepeaterStats {

@@ -808,20 +808,20 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     savePrefs();
     strcpy(reply, "OK");
   } else if (memcmp(config, "bridge.filter adverts", 21) == 0) {
-    mesh::BridgeFIlter::blockAdverts(_prefs->bridge_filter_policy);
+    mesh::BridgeFilter::blockAdverts(_prefs->bridge_filter_policy);
     savePrefs();
     strcpy(reply, "adverts blocked");
   } else if (memcmp(config, "bridge.filter public", 20) == 0) {
-    mesh::BridgeFIlter::blockPublic(_prefs->bridge_filter_policy);
+    mesh::BridgeFilter::blockPublic(_prefs->bridge_filter_policy);
     savePrefs();
     strcpy(reply, "public blocked");
   } else if (memcmp(config, "bridge.filter clear", 19) == 0) {
-    mesh::BridgeFIlter::clearPolicy(_prefs->bridge_filter_policy);
+    mesh::BridgeFilter::clearPolicy(_prefs->bridge_filter_policy);
     savePrefs();
     strcpy(reply, "cleared");
   } else if (memcmp(config, "bridge.filter add", 17) == 0) {
     uint8_t blockedChannel = (uint8_t) strtoul(&config[17], NULL, 16);
-    if(mesh::BridgeFIlter::addBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
+    if(mesh::BridgeFilter::addBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
       savePrefs();
       sprintf(reply, "%02X blocked", blockedChannel);
     } else {
@@ -829,7 +829,7 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     }
   } else if (memcmp(config, "bridge.filter del", 17) == 0) {
     uint8_t blockedChannel = (uint8_t)strtoul(&config[17], NULL, 16);
-    if (mesh::BridgeFIlter::deleteBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
+    if (mesh::BridgeFilter::deleteBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
       savePrefs();
       sprintf(reply, "%02X unblocked", blockedChannel);
     } else {
@@ -983,21 +983,21 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> adverts, public, clear, add/del <1-byte hash>");
   } else if (memcmp(config, "bridge.filter stats", 19) == 0) {
     sprintf(reply, "> TX: %d sent, %d blocked. RX: %d received, %d blocked.", 
-            mesh::BridgeFIlter::bridgefilter_stats_tx_sent,
-            mesh::BridgeFIlter::bridgefilter_stats_tx_blocked,
-            mesh::BridgeFIlter::bridgefilter_stats_rx_received,
-            mesh::BridgeFIlter::bridgefilter_stats_rx_blocked);
+            mesh::BridgeFilter::bridgefilter_stats_tx_sent,
+            mesh::BridgeFilter::bridgefilter_stats_tx_blocked,
+            mesh::BridgeFilter::bridgefilter_stats_rx_received,
+            mesh::BridgeFilter::bridgefilter_stats_rx_blocked);
   } else if (memcmp(config, "bridge.filter", 13) == 0) {
-    if (!mesh::BridgeFIlter::isPolicyEnabled(_prefs->bridge_filter_policy)) {
+    if (!mesh::BridgeFilter::isPolicyEnabled(_prefs->bridge_filter_policy)) {
       sprintf(reply, "> blocked: none");
     } else {
       sprintf(reply, "> blocked:");
 
-      if (mesh::BridgeFIlter::isAdvertsBlocked(_prefs->bridge_filter_policy)) {
+      if (mesh::BridgeFilter::isAdvertsBlocked(_prefs->bridge_filter_policy)) {
         sprintf(reply + strlen(reply), " adverts");
       }
 
-      if (mesh::BridgeFIlter::isPublicBlocked(_prefs->bridge_filter_policy)) {
+      if (mesh::BridgeFilter::isPublicBlocked(_prefs->bridge_filter_policy)) {
         sprintf(reply + strlen(reply), " public");
       }
 

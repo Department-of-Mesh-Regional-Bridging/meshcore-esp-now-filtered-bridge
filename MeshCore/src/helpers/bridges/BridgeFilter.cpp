@@ -1,4 +1,4 @@
-#include "BridgeFIlter.h"
+#include "BridgeFilter.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -6,10 +6,10 @@
 
 namespace mesh {
   // Statistics
-  uint32_t mesh::BridgeFIlter::bridgefilter_stats_tx_sent = 0;
-  uint32_t mesh::BridgeFIlter::bridgefilter_stats_tx_blocked = 0;
-  uint32_t mesh::BridgeFIlter::bridgefilter_stats_rx_received = 0;
-  uint32_t mesh::BridgeFIlter::bridgefilter_stats_rx_blocked = 0;
+  uint32_t mesh::BridgeFilter::bridgefilter_stats_tx_sent = 0;
+  uint32_t mesh::BridgeFilter::bridgefilter_stats_tx_blocked = 0;
+  uint32_t mesh::BridgeFilter::bridgefilter_stats_rx_received = 0;
+  uint32_t mesh::BridgeFilter::bridgefilter_stats_rx_blocked = 0;
 
   // https://emn178.github.io/online-tools/sha256.html
   // Private key of Public channel: 8b3387e9c5cdea6ac9e5edbaa115cd72
@@ -17,7 +17,7 @@ namespace mesh {
   // First byte is 0x11
 
   // Payload : 11 5D4A8A5FA5912A52244139E36F0BB43612967906F13DE5692C1030885AECF285AD9B
-  bool BridgeFIlter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
+  bool BridgeFilter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
     BRIDGEFILTER_DEBUG_PRINTLN("Payload type: %s, first byte: %02x", pkt->getPayloadTypeText(), pkt->payload[0]);
 
     // Drop adverts
@@ -68,7 +68,7 @@ namespace mesh {
     }
   } // isPacketAllowed
 
-  bool BridgeFIlter::isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFilter::isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
     for (uint8_t i = 0; i < bridge_filter_policy.blockedChannelCount; i++) {
       if (bridge_filter_policy.blockedChannels[i] == channel_hash_1byte) {
         return true;
@@ -78,7 +78,7 @@ namespace mesh {
     return false;
   }
 
-  bool BridgeFIlter::addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFilter::addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
     // avoid duplicates
     if (isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
       return true;
@@ -94,7 +94,7 @@ namespace mesh {
     return true;
   }
 
-  bool BridgeFIlter::deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFilter::deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte) {
     if (!isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
       return false;
     }

@@ -8,7 +8,7 @@
 
 namespace mesh {
 
-  class BridgeFIlter {
+  class BridgeFilter {
   public:
     /**
      * \brief  examine a packet and decide to allow / drop in a bridge
@@ -49,5 +49,5 @@ namespace mesh {
     static bool isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte);
     static bool addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte);
     static bool deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte);
-  }; // BridgeFIlter
+  }; // BridgeFilter
 } // namespace mesh

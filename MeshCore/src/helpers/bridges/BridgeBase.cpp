@@ -33,11 +33,11 @@ bool BridgeBase::validateChecksum(const uint8_t *data, size_t len, uint16_t rece
 
 void BridgeBase::handleReceivedPacket(mesh::Packet *packet) {
   BRIDGEFILTER_DEBUG_PRINTLN("Received packet from bridge");
-  mesh::BridgeFIlter::bridgefilter_stats_rx_received++; // Statistics
+  mesh::BridgeFilter::bridgefilter_stats_rx_received++; // Statistics
 
-  if (!mesh::BridgeFIlter::isPacketAllowed(_prefs->bridge_filter_policy, packet)) {
+  if (!mesh::BridgeFilter::isPacketAllowed(_prefs->bridge_filter_policy, packet)) {
     BRIDGEFILTER_DEBUG_PRINTLN("Dropped packet from bridge");
-    mesh::BridgeFIlter::bridgefilter_stats_rx_blocked++; // Statistics
+    mesh::BridgeFilter::bridgefilter_stats_rx_blocked++; // Statistics
     _mgr->free(packet);
     return;
   }
