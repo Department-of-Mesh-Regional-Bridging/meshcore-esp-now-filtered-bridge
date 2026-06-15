@@ -1,4 +1,4 @@
-#include "PacketFilter.h"
+#include "BridgeFIlter.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -6,10 +6,10 @@
 
 namespace mesh {
   // Statistics
-  uint32_t mesh::PacketFilter::bridgefilter_stats_tx_sent = 0;
-  uint32_t mesh::PacketFilter::bridgefilter_stats_tx_blocked = 0;
-  uint32_t mesh::PacketFilter::bridgefilter_stats_rx_received = 0;
-  uint32_t mesh::PacketFilter::bridgefilter_stats_rx_blocked = 0;
+  uint32_t mesh::BridgeFIlter::bridgefilter_stats_tx_sent = 0;
+  uint32_t mesh::BridgeFIlter::bridgefilter_stats_tx_blocked = 0;
+  uint32_t mesh::BridgeFIlter::bridgefilter_stats_rx_received = 0;
+  uint32_t mesh::BridgeFIlter::bridgefilter_stats_rx_blocked = 0;
 
   // https://emn178.github.io/online-tools/sha256.html
   // Private key of Public channel: 8b3387e9c5cdea6ac9e5edbaa115cd72
@@ -17,19 +17,19 @@ namespace mesh {
   // First byte is 0x11
 
   // Payload : 11 5D4A8A5FA5912A52244139E36F0BB43612967906F13DE5692C1030885AECF285AD9B
-  bool PacketFilter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
-    PACKETFILTER_DEBUG_PRINTLN("Payload type: %s, first byte: %02x", pkt->getPayloadTypeText(), pkt->payload[0]);
+  bool BridgeFIlter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
+    BRIDGEFILTER_DEBUG_PRINTLN("Payload type: %s, first byte: %02x", pkt->getPayloadTypeText(), pkt->payload[0]);
 
     // Drop adverts
     if (isAdvertsBlocked(bridge_filter_policy) && pkt->getPayloadType() == PAYLOAD_TYPE_ADVERT) {
-      PACKETFILTER_DEBUG_PRINTLN("Dropped adverts");
+      BRIDGEFILTER_DEBUG_PRINTLN("Dropped adverts");
       return false; // Drop
     }
 
     // Drop message based on 1-byte channel hash
     if (pkt->getPayloadType() == PAYLOAD_TYPE_GRP_TXT) {
       if (isChannelBlocked(bridge_filter_policy, pkt->payload[0])) {
-        PACKETFILTER_DEBUG_PRINTLN("Dropped message due to first byte");
+        BRIDGEFILTER_DEBUG_PRINTLN("Dropped message due to first byte");
         return false; // Drop
       }
     }
@@ -51,16 +51,16 @@ namespace mesh {
           uint32_t timestamp = dest[0] | (dest[1] << 8) | (dest[2] << 16) | (dest[3] << 24);
           time_t t = timestamp;
           struct tm *tm_info = localtime(&t);
-          PACKETFILTER_DEBUG_PRINTLN("Date time: %02d/%02d/%04d %02d:%02d:%02d", tm_info->tm_mday,
+          BRIDGEFILTER_DEBUG_PRINTLN("Date time: %02d/%02d/%04d %02d:%02d:%02d", tm_info->tm_mday,
                                      tm_info->tm_mon + 1, tm_info->tm_year + 1900, tm_info->tm_hour,
                                      tm_info->tm_min, tm_info->tm_sec);
 
           // Decoded message
           char *message = (char *)&dest[5];
-          PACKETFILTER_DEBUG_PRINTLN("Decoded message: %s", message);
+          BRIDGEFILTER_DEBUG_PRINTLN("Decoded message: %s", message);
           return false; // Able to decode, it is a message in Public channel
         } else {        // Failed to decode
-          PACKETFILTER_DEBUG_PRINTLN("Failed to decode. Not Public message");
+          BRIDGEFILTER_DEBUG_PRINTLN("Failed to decode. Not Public message");
         }
       }
 
@@ -68,7 +68,7 @@ namespace mesh {
     }
   } // isPacketAllowed
 
-  bool PacketFilter::isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFIlter::isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
     for (uint8_t i = 0; i < bridge_filter_policy.blockedChannelCount; i++) {
       if (bridge_filter_policy.blockedChannels[i] == channel_hash_1byte) {
         return true;
@@ -78,7 +78,7 @@ namespace mesh {
     return false;
   }
 
-  bool PacketFilter::addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFIlter::addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
     // avoid duplicates
     if (isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
       return true;
@@ -94,7 +94,7 @@ namespace mesh {
     return true;
   }
 
-  bool PacketFilter::deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFIlter::deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte) {
     if (!isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
       return false;
     }

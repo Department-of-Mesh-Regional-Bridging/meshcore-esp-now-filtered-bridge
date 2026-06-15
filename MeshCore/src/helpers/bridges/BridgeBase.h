@@ -5,7 +5,7 @@
 #include "helpers/SimpleMeshTables.h"
 
 #include <RTClib.h>
-#include <PacketFilter.h>
+#include <BridgeFIlter.h>
 
 /**
  * @brief Base class implementing common bridge functionality

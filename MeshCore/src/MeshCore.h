@@ -36,12 +36,12 @@
 #define BRIDGE_DEBUG_PRINTLN(...) {}
 #endif
 
-#if PACKETFILTER_DEBUG && ARDUINO
-  #define PACKETFILTER_DEBUG_PRINT(F, ...) Serial.printf("[PACKET_FILTER] " F, ##__VA_ARGS__)
-  #define PACKETFILTER_DEBUG_PRINTLN(F, ...) Serial.printf("[PACKET_FILTER] " F "\n", ##__VA_ARGS__)
+#if BRIDGEFILTER_DEBUG && ARDUINO
+  #define BRIDGEFILTER_DEBUG_PRINT(F, ...) Serial.printf("[PACKET_FILTER] " F, ##__VA_ARGS__)
+  #define BRIDGEFILTER_DEBUG_PRINTLN(F, ...) Serial.printf("[PACKET_FILTER] " F "\n", ##__VA_ARGS__)
 #else
-  #define PACKETFILTER_DEBUG_PRINT(...) {}
-  #define PACKETFILTER_DEBUG_PRINTLN(...) {}
+  #define BRIDGEFILTER_DEBUG_PRINT(...) {}
+  #define BRIDGEFILTER_DEBUG_PRINTLN(...) {}
 #endif
 
 namespace mesh {
