@@ -61,16 +61,6 @@ public:
    */
   uint8_t getRouteType() const { return header & PH_ROUTE_MASK; }
 
-  const char *getRouteTypeText() {
-    switch (getRouteType()) {
-    case ROUTE_TYPE_TRANSPORT_FLOOD: return "ROUTE_TYPE_TRANSPORT_FLOOD";
-    case ROUTE_TYPE_FLOOD: return "ROUTE_TYPE_FLOOD";
-    case ROUTE_TYPE_DIRECT: return "ROUTE_TYPE_DIRECT";
-    case ROUTE_TYPE_TRANSPORT_DIRECT: return "ROUTE_TYPE_TRANSPORT_DIRECT";
-    default: return "ROUTE_TYPE_UNKNOWN";
-    }
-  }
-
   bool isRouteFlood() const { return getRouteType() == ROUTE_TYPE_FLOOD || getRouteType() == ROUTE_TYPE_TRANSPORT_FLOOD; }
   bool isRouteDirect() const { return getRouteType() == ROUTE_TYPE_DIRECT || getRouteType() == ROUTE_TYPE_TRANSPORT_DIRECT; }
 
@@ -80,24 +70,6 @@ public:
    * \returns  one of PAYLOAD_TYPE_ values
    */
   uint8_t getPayloadType() const { return (header >> PH_TYPE_SHIFT) & PH_TYPE_MASK; }
-  const char* getPayloadTypeText() {
-    switch (getPayloadType()) {
-        case PAYLOAD_TYPE_REQ: return "PAYLOAD_TYPE_REQ";
-        case PAYLOAD_TYPE_RESPONSE: return "PAYLOAD_TYPE_RESPONSE";
-        case PAYLOAD_TYPE_TXT_MSG: return "PAYLOAD_TYPE_TXT_MSG";
-        case PAYLOAD_TYPE_ACK: return "PAYLOAD_TYPE_ACK";
-        case PAYLOAD_TYPE_ADVERT: return "PAYLOAD_TYPE_ADVERT";
-        case PAYLOAD_TYPE_GRP_TXT: return "PAYLOAD_TYPE_GRP_TXT";
-        case PAYLOAD_TYPE_GRP_DATA: return "PAYLOAD_TYPE_GRP_DATA";
-        case PAYLOAD_TYPE_ANON_REQ: return "PAYLOAD_TYPE_ANON_REQ";
-        case PAYLOAD_TYPE_PATH: return "PAYLOAD_TYPE_PATH";
-        case PAYLOAD_TYPE_TRACE: return "PAYLOAD_TYPE_TRACE";
-        case PAYLOAD_TYPE_MULTIPART: return "PAYLOAD_TYPE_MULTIPART";
-        case PAYLOAD_TYPE_CONTROL: return "PAYLOAD_TYPE_CONTROL";
-        case PAYLOAD_TYPE_RAW_CUSTOM: return "PAYLOAD_TYPE_RAW_CUSTOM";
-        default: return "PAYLOAD_TYPE_UNKNOWN";
-    }
-}
 
   /**
    * \returns  one of PAYLOAD_VER_ values

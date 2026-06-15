@@ -428,7 +428,11 @@ void MyMesh::sendFloodReply(mesh::Packet* packet, unsigned long delay_millis, ui
 
 bool MyMesh::allowPacketForward(const mesh::Packet *packet) {
   if (_prefs.disable_fwd) return false;
-  if (packet->isRouteFlood() && packet->getPathHashCount() >= _prefs.flood_max) return false;
+  if (packet->isRouteFlood()) {
+    if (packet->getPathHashCount() >= _prefs.flood_max) return false;
+    if (packet->getRouteType() == ROUTE_TYPE_FLOOD && packet->getPathHashCount() >= _prefs.flood_max_unscoped) return false;
+    if (packet->getPayloadType() == PAYLOAD_TYPE_ADVERT && packet->getPathHashCount() >= _prefs.flood_max_advert) return false;
+  }
   if (packet->isRouteFlood() && recv_pkt_region == NULL) {
     MESH_DEBUG_PRINTLN("allowPacketForward: unknown transport code, or wildcard not allowed for FLOOD packet");
     return false;
@@ -471,7 +475,7 @@ void MyMesh::logRxRaw(float snr, float rssi, const uint8_t raw[], int len) {
 void MyMesh::logRx(mesh::Packet *pkt, int len, float score) {
 #ifdef WITH_BRIDGE
   if (_prefs.bridge_pkt_src == 1) {
-      bridge.sendPacket(pkt);
+    bridge.sendPacket(pkt);
   }
 #endif
 
@@ -642,7 +646,7 @@ void MyMesh::onAdvertRecv(mesh::Packet *packet, const mesh::Identity &id, uint32
   mesh::Mesh::onAdvertRecv(packet, id, timestamp, app_data, app_data_len); // chain to super impl
 
   // if this a zero hop advert (and not via 'Share'), add it to neighbours
-  if (packet->path_len == 0 && !isShare(packet)) {
+  if (packet->getPathHashCount() == 0 && !isShare(packet)) {
     AdvertDataParser parser(app_data, app_data_len);
     if (parser.isValid() && parser.getType() == ADV_TYPE_REPEATER) { // just keep neigbouring Repeaters
       putNeighbour(id, timestamp, packet->getSNR());
@@ -679,7 +683,7 @@ void MyMesh::onPeerDataRecv(mesh::Packet *packet, uint8_t type, int sender_idx, 
         mesh::Packet *reply =
             createDatagram(PAYLOAD_TYPE_RESPONSE, client->id, secret, reply_data, reply_len);
         if (reply) {
-          if (client->out_path_len != OUT_PATH_UNKNOWN) { // we have an out_path, so send DIRECT
+          if (mesh::Packet::isValidPathLen(client->out_path_len)) { // we have an out_path, so send DIRECT
             sendDirect(reply, client->out_path, client->out_path_len, SERVER_RESPONSE_DELAY);
           } else {
             sendFloodReply(reply, SERVER_RESPONSE_DELAY, packet->getPathHashSize());
@@ -712,10 +716,10 @@ void MyMesh::onPeerDataRecv(mesh::Packet *packet, uint8_t type, int sender_idx, 
 
         mesh::Packet *ack = createAck(ack_hash);
         if (ack) {
-          if (client->out_path_len == OUT_PATH_UNKNOWN) {
-            sendFloodReply(ack, TXT_ACK_DELAY, packet->getPathHashSize());
-          } else {
+          if (mesh::Packet::isValidPathLen(client->out_path_len)) {
             sendDirect(ack, client->out_path, client->out_path_len, TXT_ACK_DELAY);
+          } else {
+            sendFloodReply(ack, TXT_ACK_DELAY, packet->getPathHashSize());
           }
         }
       }
@@ -726,7 +730,7 @@ void MyMesh::onPeerDataRecv(mesh::Packet *packet, uint8_t type, int sender_idx, 
       if (is_retry) {
         *reply = 0;
       } else {
-        handleCommand(sender_timestamp, command, reply);
+        handleCommand(sender_timestamp, client, command, reply);
       }
       int text_len = strlen(reply);
       if (text_len > 0) {
@@ -740,10 +744,10 @@ void MyMesh::onPeerDataRecv(mesh::Packet *packet, uint8_t type, int sender_idx, 
 
         auto reply = createDatagram(PAYLOAD_TYPE_TXT_MSG, client->id, secret, temp, 5 + text_len);
         if (reply) {
-          if (client->out_path_len == OUT_PATH_UNKNOWN) {
-            sendFloodReply(reply, CLI_REPLY_DELAY_MILLIS, packet->getPathHashSize());
-          } else {
+          if (mesh::Packet::isValidPathLen(client->out_path_len)) {
             sendDirect(reply, client->out_path, client->out_path_len, CLI_REPLY_DELAY_MILLIS);
+          } else {
+            sendFloodReply(reply, CLI_REPLY_DELAY_MILLIS, packet->getPathHashSize());
           }
         }
       }
@@ -763,7 +767,9 @@ bool MyMesh::onPeerPathRecv(mesh::Packet *packet, int sender_idx, const uint8_t 
     auto client = acl.getClientByIdx(i);
 
     // store a copy of path, for sendDirect()
-    client->out_path_len = mesh::Packet::copyPath(client->out_path, path, path_len);
+    if (client->out_path_len != OUT_PATH_FORCE_FLOOD) {
+      client->out_path_len = mesh::Packet::copyPath(client->out_path, path, path_len);
+    }
     client->last_activity = getRTCClock()->getCurrentTime();
   } else {
     MESH_DEBUG_PRINTLN("onPeerPathRecv: invalid peer idx: %d", i);
@@ -891,8 +897,10 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   _prefs.cr = LORA_CR;
   _prefs.tx_power_dbm = LORA_TX_POWER;
   _prefs.advert_interval = 1;        // default to 2 minutes for NEW installs
-  _prefs.flood_advert_interval = 12; // 12 hours
+  _prefs.flood_advert_interval = 47; // 47 hours
   _prefs.flood_max = 64;
+  _prefs.flood_max_unscoped = 64;
+  _prefs.flood_max_advert = 8;
   _prefs.interference_threshold = 0; // disabled
 
   // bridge defaults
@@ -961,8 +969,8 @@ void MyMesh::begin(FILESYSTEM *fs) {
   }
 #endif
 
-  radio_set_params(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
-  radio_set_tx_power(_prefs.tx_power_dbm);
+  radio_driver.setParams(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
+  radio_driver.setTxPower(_prefs.tx_power_dbm);
 
   radio_driver.setRxBoostedGainMode(_prefs.rx_boosted_gain);
   MESH_DEBUG_PRINTLN("RX Boosted Gain Mode: %s",
@@ -1059,7 +1067,7 @@ void MyMesh::dumpLogFile() {
 }
 
 void MyMesh::setTxPower(int8_t power_dbm) {
-  radio_set_tx_power(power_dbm);
+  radio_driver.setTxPower(power_dbm);
 }
 
 #if defined(USE_SX1262) || defined(USE_SX1268)
@@ -1174,7 +1182,108 @@ void MyMesh::clearStats() {
   ((SimpleMeshTables *)getTables())->resetStats();
 }
 
-void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply) {
+static char* trimSpaces(char* s) {
+  while (*s == ' ') s++;
+  char* end = s + strlen(s);
+  while (end > s && end[-1] == ' ') end--;
+  *end = 0;
+  return s;
+}
+
+static bool parsePathCommand(char* raw, uint8_t* out_path, uint8_t& out_path_len, const char*& err) {
+  if (raw == NULL || out_path == NULL) {
+    err = "Err - bad params";
+    return false;
+  }
+
+  char* spec = trimSpaces(raw);
+  if (*spec == 0) {
+    err = "Err - missing path";
+    return false;
+  }
+  if (strcmp(spec, "clear") == 0 || strcmp(spec, "-") == 0 || strcmp(spec, "none") == 0) {
+    out_path_len = OUT_PATH_UNKNOWN;
+    return true;
+  }
+  if (strcmp(spec, "flood") == 0) {
+    out_path_len = OUT_PATH_FORCE_FLOOD;
+    return true;
+  }
+  if (strcmp(spec, "direct") == 0) {
+    out_path_len = 0;
+    return true;
+  }
+
+  uint8_t hash_size = 0;
+  uint8_t hop_count = 0;
+  char* token = spec;
+  while (token && *token) {
+    char* comma = strchr(token, ',');
+    if (comma) *comma = 0;
+    token = trimSpaces(token);
+
+    int hex_len = strlen(token);
+    if (!(hex_len == 2 || hex_len == 4 || hex_len == 6)) {
+      err = "Err - bad params";
+      return false;
+    }
+
+    uint8_t hop_hash_size = (uint8_t)(hex_len / 2);
+    if (hash_size == 0) {
+      hash_size = hop_hash_size;
+    } else if (hash_size != hop_hash_size) {
+      err = "Err - bad params";
+      return false;
+    }
+
+    if (hop_count >= 63 || (hop_count + 1) * hash_size > MAX_PATH_SIZE) {
+      err = "Err - bad params";
+      return false;
+    }
+    if (!mesh::Utils::fromHex(&out_path[hop_count * hash_size], hash_size, token)) {
+      err = "Err - bad hex";
+      return false;
+    }
+
+    hop_count++;
+    token = comma ? comma + 1 : NULL;
+  }
+
+  if (hash_size == 0 || hop_count == 0) {
+    err = "Err - missing path";
+    return false;
+  }
+  out_path_len = ((hash_size - 1) << 6) | (hop_count & 63);
+  return true;
+}
+
+static void formatPathReply(const uint8_t* path, uint8_t path_len, char* out, size_t out_len) {
+  if (path_len == OUT_PATH_FORCE_FLOOD) {
+    snprintf(out, out_len, "> flood");
+    return;
+  }
+  if (path_len == OUT_PATH_UNKNOWN) {
+    snprintf(out, out_len, "> unknown");
+    return;
+  }
+  if (!mesh::Packet::isValidPathLen(path_len)) {
+    snprintf(out, out_len, "> invalid");
+    return;
+  }
+  if ((path_len & 63) == 0) {
+    snprintf(out, out_len, "> direct");
+    return;
+  }
+
+  uint8_t hash_size = (path_len >> 6) + 1;
+  uint8_t hop_count = path_len & 63;
+  uint8_t byte_len = hop_count * hash_size;
+  char hex[(MAX_PATH_SIZE * 2) + 1];
+  mesh::Utils::toHex(hex, path, byte_len);
+  snprintf(out, out_len, "> hs=%u hops=%u hex=%s", (uint32_t)hash_size, (uint32_t)hop_count, hex);
+}
+
+void MyMesh::handleCommand(uint32_t sender_timestamp, ClientInfo* sender, char *command, char *reply) {
   if (region_load_active) {
     if (StrHelper::isBlank(command)) {  // empty/blank line, signal to terminate 'load' operation
       region_map = temp_map;  // copy over the temp instance as new current map
@@ -1251,6 +1360,34 @@ void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply
       Serial.printf("\n");
     }
     reply[0] = 0;
+  } else if (strcmp(command, "get outpath") == 0
+          || strcmp(command, "set outpath") == 0
+          || strncmp(command, "set outpath ", 12) == 0) {
+    bool is_get = strncmp(command, "get ", 4) == 0;
+    if (sender == NULL) {
+      strcpy(reply, "Err - command needs remote client context");
+    } else if (is_get) {
+      formatPathReply(sender->out_path, sender->out_path_len, reply, 160);
+    } else {
+      char* spec = command + 11;  // length of "set outpath"
+      if (*spec == ' ') spec++;
+
+      uint8_t path[MAX_PATH_SIZE];
+      uint8_t path_len = OUT_PATH_UNKNOWN;
+      const char* err = NULL;
+      if (!parsePathCommand(spec, path, path_len, err)) {
+        strcpy(reply, err ? err : "Err - invalid path");
+      } else {
+        if (path_len == OUT_PATH_UNKNOWN || path_len == OUT_PATH_FORCE_FLOOD) {
+          memset(sender->out_path, 0, sizeof(sender->out_path));
+          sender->out_path_len = path_len;
+        } else {
+          sender->out_path_len = mesh::Packet::copyPath(sender->out_path, path, path_len);
+        }
+        dirty_contacts_expiry = futureMillis(LAZY_CONTACTS_WRITE_DELAY);
+        formatPathReply(sender->out_path, sender->out_path_len, reply, 160);
+      }
+    }
   } else if (memcmp(command, "discover.neighbors", 18) == 0) {
     const char* sub = command + 18;
     while (*sub == ' ') sub++;
@@ -1288,13 +1425,13 @@ void MyMesh::loop() {
 
   if (set_radio_at && millisHasNowPassed(set_radio_at)) { // apply pending (temporary) radio params
     set_radio_at = 0;                                     // clear timer
-    radio_set_params(pending_freq, pending_bw, pending_sf, pending_cr);
+    radio_driver.setParams(pending_freq, pending_bw, pending_sf, pending_cr);
     MESH_DEBUG_PRINTLN("Temp radio params");
   }
 
   if (revert_radio_at && millisHasNowPassed(revert_radio_at)) { // revert radio params to orig
     revert_radio_at = 0;                                        // clear timer
-    radio_set_params(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
+    radio_driver.setParams(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
     MESH_DEBUG_PRINTLN("Radio params restored");
   }
 

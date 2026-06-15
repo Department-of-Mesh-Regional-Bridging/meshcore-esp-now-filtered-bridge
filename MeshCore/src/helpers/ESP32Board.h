@@ -14,6 +14,7 @@
 #include <Wire.h>
 #include "soc/rtc.h"
 #include "esp_system.h"
+#include <driver/rtc_io.h>
 
 class ESP32Board : public mesh::MainBoard {
 protected:
@@ -24,7 +25,7 @@ protected:
 public:
   void begin() {
     // for future use, sub-classes SHOULD call this from their begin()
-    startup_reason = BD_STARTUP_NORMAL;
+    startup_reason = BD_STARTUP_NORMAL;    
 
   #ifdef ESP32_CPU_FREQ
     setCpuFrequencyMhz(ESP32_CPU_FREQ);
@@ -47,7 +48,7 @@ public:
    #endif
   #else
     Wire.begin();
-  #endif
+  #endif    
   }
 
   // Temperature from ESP32 MCU
@@ -62,7 +63,32 @@ public:
     return raw / 4;
   }
 
-  uint32_t getIRQGpio() {
+  void powerOff() override {
+    enterDeepSleep(0); // Do not wakeup
+  }
+
+  void enterDeepSleep(uint32_t secs) {
+    // Clear stale wakeup sources to avoid ghost wakeup
+    // This is required when Power Management and automatic lightsleep are enabled
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+    if (secs > 0) {
+      esp_sleep_enable_timer_wakeup(secs * 1000000ULL);
+    }
+
+    // Keep LoRa inactive during deepsleep
+    digitalWrite(P_LORA_NSS, HIGH);
+#if CONFIG_IDF_TARGET_ESP32C3
+    gpio_hold_en((gpio_num_t)P_LORA_NSS);
+#else
+    rtc_gpio_hold_en((gpio_num_t)P_LORA_NSS);
+#endif
+
+    // Finally set ESP32 into deepsleep
+    esp_deep_sleep_start();   // CPU halts here and never returns!
+  }
+
+  uint32_t getIRQGpio() override {
     return P_LORA_DIO_1; // default for SX1262
   }
 
@@ -74,7 +100,7 @@ public:
     }
 
     // Set GPIO wakeup
-    gpio_num_t wakeupPin = (gpio_num_t)getIRQGpio();
+    gpio_num_t wakeupPin = (gpio_num_t)getIRQGpio();    
 
     // Configure timer wakeup
     if (secs > 0) {
@@ -212,7 +238,7 @@ public:
     if (_rtc_backup_magic == RTC_BACKUP_MAGIC && _rtc_backup_time > RTC_TIME_MIN) {
       tv.tv_sec = _rtc_backup_time;
     } else {
-      tv.tv_sec = 1772323200;  // 1 Mar 2026
+      tv.tv_sec = RTC_TIME_MIN;
     }
     tv.tv_usec = 0;
     settimeofday(&tv, NULL);
