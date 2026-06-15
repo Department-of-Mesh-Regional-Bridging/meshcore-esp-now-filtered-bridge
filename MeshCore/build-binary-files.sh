@@ -1,5 +1,5 @@
 # Packet Filter
-export FIRMWARE_VERSION="BridgeFilter-1.1"
+export FIRMWARE_VERSION="BridgeFilter-2.0"
 sh build.sh build-firmware \
 Heltec_v3_repeater_bridge_espnow \
 heltec_v4_repeater_bridge_espnow
