@@ -1,7 +1,3 @@
-# MeshCore ESP-NOW Bridge Filter
-MeshCore / ESP-NOW bridge - Extended With Filtering Capability
-```
-
 # MeshCore / ESP-NOW Crossband Bridge Filter
 We are an Organization Dedicated to Promoting, Healthy, Federated, and Intelligently-Scalable MeshCore Networks
 ## Mission
@@ -18,7 +14,8 @@ This project promotes regional autonomy, mesh hygiene, and cooperative inter‑m
 ## Key Features
 Customizable Packet Filtering
 
-CLI‑controlled filtering of:
+CLI‑controlled filtering of:    
+    
     - Adverts
     - Main Public channel
     - Up to 8 hashtag channels
@@ -27,12 +24,14 @@ Supports granular control of what crosses the bridge
 (e.g., #sacsfbridge for inter‑mesh threaded communication corridors)
 
 Crossband Bridge Filter will still allow, and message types that persist, across bridge:
+    
     - Private messages
     - Private groups
     - Repeater admin/guest control
 
 ## Why This Matters
 Modern MeshCore deployments face challenges as they grow:
+    
     - Advert storms
     - Public‑channel super saturation
     - Region bleed‑through
