@@ -7,7 +7,7 @@ We are an Organization Dedicated to Promoting, Healthy, Federated, and Intellige
 ## Mission
 To enable intentional, low‑noise communication between independent MeshCore regions operating on different frequency settings—while filtering out common non‑essential flood traffic and preserving the long‑term sanity of the mesh ecosystem.
 
-## Overview
+# Overview
 The Crossband Filtered Bridge is a dual‑radio ESP‑NOW system that links two MeshCore regions without forcing them to share the same RF environment.
 It selectively forwards only meaningful traffic, preventing cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes.
 
