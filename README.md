@@ -1,6 +1,6 @@
 # MeshCore ESP-NOW Bridge Filter
 MeshCore / ESP-NOW bridge - Extended With Filtering Capability
-
+```
 Crossband Filtered Bridge Project
 An Organization Dedicated to Healthy, Sovereign, and Scalable MeshCore Networks
 Mission
@@ -80,6 +80,7 @@ Our organization is committed to:
 Maintaining healthy, sovereign regional meshes
 
 Encouraging cooperative inter‑mesh communication
+```
 
 Providing open, transparent filtering tools
 
