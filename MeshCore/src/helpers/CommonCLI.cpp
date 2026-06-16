@@ -819,21 +819,41 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     mesh::BridgeFilter::clearPolicy(_prefs->bridge_filter_policy);
     savePrefs();
     strcpy(reply, "cleared");
-  } else if (memcmp(config, "bridge.filter add", 17) == 0) {
-    uint8_t blockedChannel = (uint8_t) strtoul(&config[17], NULL, 16);
-    if(mesh::BridgeFilter::addBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
-      savePrefs();
-      sprintf(reply, "%02X blocked", blockedChannel);
-    } else {
-      strcpy(reply, "filter full");
+  } else if (memcmp(config, "bridge.filter add ", 18) == 0) {
+    const char *arg = &config[18];
+    if (arg[0] == '#') { // Hashtag
+      if (mesh::BridgeFilter::addBlockedHTag(_prefs->bridge_filter_policy, arg)) {
+        savePrefs();
+        sprintf(reply, "hashtag %s blocked\n", arg);
+      } else {
+        strcpy(reply, "hashtag filter full");
+      }
+    } else { // First byte
+      uint8_t blockedFirstByte = (uint8_t)strtoul(arg, NULL, 16);
+      if (mesh::BridgeFilter::addBlockedFirstByte(_prefs->bridge_filter_policy, blockedFirstByte)) {
+        savePrefs();
+        sprintf(reply, "%02x blocked", blockedFirstByte);
+      } else {
+        strcpy(reply, "first-byte filter full");
+      }
     }
-  } else if (memcmp(config, "bridge.filter del", 17) == 0) {
-    uint8_t blockedChannel = (uint8_t)strtoul(&config[17], NULL, 16);
-    if (mesh::BridgeFilter::deleteBlockedChannel(_prefs->bridge_filter_policy, blockedChannel)) {
-      savePrefs();
-      sprintf(reply, "%02X unblocked", blockedChannel);
-    } else {
-      strcpy(reply, "not found");
+  } else if (memcmp(config, "bridge.filter del ", 18) == 0) {
+    const char *arg = &config[18];
+    if (arg[0] == '#') { // Hashtag
+      if (mesh::BridgeFilter::deleteBlockedHTag(_prefs->bridge_filter_policy, arg)) {
+        savePrefs();
+        sprintf(reply, "hashtag %s unblocked\n", arg);
+      } else {
+        strcpy(reply, "not found");
+      }
+    } else { // First byte
+      uint8_t blockedFirstByte = (uint8_t)strtoul(arg, NULL, 16);
+      if (mesh::BridgeFilter::deleteBlockedFirstByte(_prefs->bridge_filter_policy, blockedFirstByte)) {
+        savePrefs();
+        sprintf(reply, "%02x unblocked", blockedFirstByte);
+      } else {
+        strcpy(reply, "not found");
+      }
     }
 #endif
   } else if (memcmp(config, "adc.multiplier ", 15) == 0) {
@@ -1001,8 +1021,12 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
         sprintf(reply + strlen(reply), " public");
       }
 
-      for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedChannelCount; i++) {
-        sprintf(reply + strlen(reply), " %02X", _prefs->bridge_filter_policy.blockedChannels[i]);
+      for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedFirstBytesCount; i++) {
+        sprintf(reply + strlen(reply), " %02x", _prefs->bridge_filter_policy.blockedFirstBytes[i]);
+      }
+
+      for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedHTagCount; i++) {
+        sprintf(reply + strlen(reply), " %s", (char *)_prefs->bridge_filter_policy.blockedHTags[i]);
       }
     }
     sprintf(reply + strlen(reply), "\r\n? for help");

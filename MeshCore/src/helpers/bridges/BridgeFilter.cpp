@@ -1,8 +1,10 @@
-#include "BridgeFilter.h"
-
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
+
+#include "BridgeFilter.h"
+#include <helpers/TransportKeyStore.h>
+#include <SHA256.h>
 
 namespace mesh {
   // Statistics
@@ -17,60 +19,76 @@ namespace mesh {
   // First byte is 0x11
 
   // Payload : 11 5D4A8A5FA5912A52244139E36F0BB43612967906F13DE5692C1030885AECF285AD9B
-  bool BridgeFilter::isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt) {
+  bool BridgeFilter::isPacketAllowed(const BridgeFilterPolicy& policy, mesh::Packet *pkt) {
     BRIDGEFILTER_DEBUG_PRINTLN("Payload type: %s, first byte: %02x", pkt->getPayloadTypeText(), pkt->payload[0]);
 
     // Drop adverts
-    if (isAdvertsBlocked(bridge_filter_policy) && pkt->getPayloadType() == PAYLOAD_TYPE_ADVERT) {
-      BRIDGEFILTER_DEBUG_PRINTLN("Dropped adverts");
+    if (isAdvertsBlocked(policy) && pkt->getPayloadType() == PAYLOAD_TYPE_ADVERT) {
+      BRIDGEFILTER_DEBUG_PRINTLN("Advert message");
       return false; // Drop
     }
 
-    // Drop message based on 1-byte channel hash
+    // Drop message based on first-byte channel hash
     if (pkt->getPayloadType() == PAYLOAD_TYPE_GRP_TXT) {
-      if (isChannelBlocked(bridge_filter_policy, pkt->payload[0])) {
-        BRIDGEFILTER_DEBUG_PRINTLN("Dropped message due to first byte");
+      if (isBlockedFirstByte(policy, pkt->payload[0])) {
+        BRIDGEFILTER_DEBUG_PRINTLN("First-byte message");
         return false; // Drop
       }
     }
 
-    // Drop message from Public channel
+    // Drop message from channels
     if (pkt->getPayloadType() == PAYLOAD_TYPE_GRP_TXT) {
-      if (pkt->payload[0] == 0x11) {
+      if (pkt->payload[0] == 0x11) { // "Public" channel?
+        // Known public key of "Public" channel
         uint8_t shared_secret[PUB_KEY_SIZE] = { 0x8b, 0x33, 0x87, 0xe9, 0xc5, 0xcd, 0xea, 0x6a,
                                                 0xc9, 0xe5, 0xed, 0xba, 0xa1, 0x15, 0xcd, 0x72 };
         uint8_t dest[MAX_PACKET_PAYLOAD];
         int len = mesh::Utils::MACThenDecrypt(shared_secret, dest, &pkt->payload[1], pkt->payload_len - 1);
         if (len > 0) { // Able to decode
           // Public message but not blocked
-          if (!isPublicBlocked(bridge_filter_policy)) {
+          if (!isPublicBlocked(policy)) {
             return true;
           }
 
-          // Timestamp
-          uint32_t timestamp = dest[0] | (dest[1] << 8) | (dest[2] << 16) | (dest[3] << 24);
-          time_t t = timestamp;
-          struct tm *tm_info = localtime(&t);
-          BRIDGEFILTER_DEBUG_PRINTLN("Date time: %02d/%02d/%04d %02d:%02d:%02d", tm_info->tm_mday,
-                                     tm_info->tm_mon + 1, tm_info->tm_year + 1900, tm_info->tm_hour,
-                                     tm_info->tm_min, tm_info->tm_sec);
-
           // Decoded message
           char *message = (char *)&dest[5];
-          BRIDGEFILTER_DEBUG_PRINTLN("Decoded message: %s", message);
-          return false; // Able to decode, it is a message in Public channel
+          BRIDGEFILTER_DEBUG_PRINTLN("Public message: %s", message);
+          return false; // Block
         } else {        // Failed to decode
-          BRIDGEFILTER_DEBUG_PRINTLN("Failed to decode. Not Public message");
+          BRIDGEFILTER_DEBUG_PRINTLN("Not Public message");
         }
-      }
+      } else { // Check for blocked Hashtags
+        for (int i = 0; i < policy.blockedHTagCount; i++) {
+          // Get Hashtag name
+          const char* hashtag = policy.blockedHTags[i];
 
-      return true; // Allow if reach here
-    }
+          // Get PSK
+          uint8_t shared_secret[PUB_KEY_SIZE] = {0};
+          SHA256 sha;
+          sha.update(hashtag, strlen(hashtag));
+          sha.finalize(shared_secret, 16);
+
+          uint8_t dest[MAX_PACKET_PAYLOAD];
+          int len = mesh::Utils::MACThenDecrypt(shared_secret, dest, &pkt->payload[1], pkt->payload_len - 1);
+          if (len > 0) { // Able to decode
+            // Decoded message
+            char *message = (char *)&dest[5];
+            BRIDGEFILTER_DEBUG_PRINTLN("Hashtag %s message: %s", hashtag, message);
+            return false; // Block
+          } else {
+            BRIDGEFILTER_DEBUG_PRINTLN("Not hashtag %s message", hashtag);
+          }
+        }
+      } // End of check for blocked Hashtags
+    } // End of drop message from channels
+
+    return true; // Allow if reach here
   } // isPacketAllowed
 
-  bool BridgeFilter::isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
-    for (uint8_t i = 0; i < bridge_filter_policy.blockedChannelCount; i++) {
-      if (bridge_filter_policy.blockedChannels[i] == channel_hash_1byte) {
+  // First byte
+  bool BridgeFilter::isBlockedFirstByte(const BridgeFilterPolicy& policy, uint8_t channel_hash_1byte) {
+    for (uint8_t i = 0; i < policy.blockedFirstBytesCount; i++) {
+      if (policy.blockedFirstBytes[i] == channel_hash_1byte) {
         return true;
       }
     }
@@ -78,44 +96,84 @@ namespace mesh {
     return false;
   }
 
-  bool BridgeFilter::addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte) {
+  bool BridgeFilter::addBlockedFirstByte(BridgeFilterPolicy& policy, uint8_t channel_hash_1byte) {
     // avoid duplicates
-    if (isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
+    if (isBlockedFirstByte(policy, channel_hash_1byte)) {
       return true;
     }
 
     // avoid overflow
-    if (bridge_filter_policy.blockedChannelCount >= BRIDGE_FILTER_BLOCKEDCHANNELS_MAX) {
+    if (policy.blockedFirstBytesCount >= BRIDGE_FILTER_BLOCKEDFIRSTBYTES_MAX) {
       return false;
     }
 
-    bridge_filter_policy.blockedChannels[bridge_filter_policy.blockedChannelCount++] = channel_hash_1byte;
-
+    policy.blockedFirstBytes[policy.blockedFirstBytesCount++] = channel_hash_1byte;
     return true;
   }
 
-  bool BridgeFilter::deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte) {
-    if (!isChannelBlocked(bridge_filter_policy, channel_hash_1byte)) {
+  bool BridgeFilter::deleteBlockedFirstByte(BridgeFilterPolicy &policy, uint8_t channel_hash_1byte) {
+    if (!isBlockedFirstByte(policy, channel_hash_1byte)) {
       return false;
     }
 
-    for (uint8_t i = 0; i < bridge_filter_policy.blockedChannelCount; i++) {
-      if (bridge_filter_policy.blockedChannels[i] == channel_hash_1byte) {
-        // Found target channel in blocked list
-
+    for (uint8_t i = 0; i < policy.blockedFirstBytesCount; i++) {
+      // Found target channel in blocked list
+      if (policy.blockedFirstBytes[i] == channel_hash_1byte) {
         // Remove by swapping with the last element (O(1) removal, no shifting needed)
-        bridge_filter_policy.blockedChannels[i] =
-            bridge_filter_policy.blockedChannels[bridge_filter_policy.blockedChannelCount - 1];
+        policy.blockedFirstBytes[i] = policy.blockedFirstBytes[policy.blockedFirstBytesCount - 1];
 
         // Reduce active count (logical deletion)
-        bridge_filter_policy.blockedChannelCount--;
+        policy.blockedFirstBytesCount--;
 
         // Optional: clear last slot for debugging / hygiene (not required for logic)
-        bridge_filter_policy.blockedChannels[bridge_filter_policy.blockedChannelCount] = 0;
+        policy.blockedFirstBytes[policy.blockedFirstBytesCount] = 0;
         return true; // successfully removed
       }
     }
 
     return false; // Not found
+  }
+
+  // Hashtag
+  bool BridgeFilter::isBlockedHTag(const BridgeFilterPolicy &policy, const char* htag) {
+    for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
+      if (memcmp(policy.blockedHTags[i], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN) == 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool BridgeFilter::addBlockedHTag(BridgeFilterPolicy &policy, const char* htag) {
+    // avoid duplicates
+    for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
+      if (memcmp(policy.blockedHTags[i], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN) == 0) {
+        return true;
+      }
+    }
+
+    // avoid overflow
+    if (policy.blockedHTagCount >= BRIDGE_FILTER_BLOCKEDHTAGS_MAX) {
+      return false;
+    }
+
+    memcpy(policy.blockedHTags[policy.blockedHTagCount], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+    policy.blockedHTagCount++;
+    return true;
+  }
+
+  bool BridgeFilter::deleteBlockedHTag(BridgeFilterPolicy &policy, const char* htag) {
+    for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
+      if (memcmp(policy.blockedHTags[i], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN) == 0) {
+        for (uint8_t j = i; j + 1 < policy.blockedHTagCount; j++) {
+          memcpy(policy.blockedHTags[j], policy.blockedHTags[j + 1], BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+        }
+
+        policy.blockedHTagCount--;
+        return true;
+      }
+    }
+
+    return false;
   }
 } // namespace mesh

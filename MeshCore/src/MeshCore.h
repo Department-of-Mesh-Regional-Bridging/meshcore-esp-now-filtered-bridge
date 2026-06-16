@@ -38,8 +38,8 @@
 #endif
 
 #if BRIDGEFILTER_DEBUG && ARDUINO
-  #define BRIDGEFILTER_DEBUG_PRINT(F, ...) Serial.printf("[PACKET_FILTER] " F, ##__VA_ARGS__)
-  #define BRIDGEFILTER_DEBUG_PRINTLN(F, ...) Serial.printf("[PACKET_FILTER] " F "\n", ##__VA_ARGS__)
+  #define BRIDGEFILTER_DEBUG_PRINT(F, ...) Serial.printf("[BRIDGE_FILTER] " F, ##__VA_ARGS__)
+  #define BRIDGEFILTER_DEBUG_PRINTLN(F, ...) Serial.printf("[BRIDGE_FILTER] " F "\n", ##__VA_ARGS__)
 #else
   #define BRIDGEFILTER_DEBUG_PRINT(...) {}
   #define BRIDGEFILTER_DEBUG_PRINTLN(...) {}

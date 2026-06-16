@@ -4,7 +4,9 @@
 #include "Utils.h"
 #include <MeshCore.h>
 
-#define BRIDGE_FILTER_BLOCKEDCHANNELS_MAX 8
+#define BRIDGE_FILTER_BLOCKEDFIRSTBYTES_MAX 8
+#define BRIDGE_FILTER_BLOCKEDHTAGS_MAX 16
+#define BRIDGE_FILTER_BLOCKEDHTAGS_LEN 31
 
 namespace mesh {
 
@@ -16,8 +18,14 @@ namespace mesh {
 
     struct BridgeFilterPolicy {
       uint8_t policy;
-      uint8_t blockedChannels[BRIDGE_FILTER_BLOCKEDCHANNELS_MAX];
-      uint8_t blockedChannelCount = 0;
+      
+      // 1-byte blocking
+      uint8_t blockedFirstBytes[BRIDGE_FILTER_BLOCKEDFIRSTBYTES_MAX];
+      uint8_t blockedFirstBytesCount = 0;
+
+      // Hashtag blocking
+      char blockedHTags[BRIDGE_FILTER_BLOCKEDHTAGS_MAX][BRIDGE_FILTER_BLOCKEDHTAGS_LEN];
+      uint8_t blockedHTagCount = 0;
     };
 
     // Statistics
@@ -27,27 +35,34 @@ namespace mesh {
     static uint32_t bridgefilter_stats_rx_blocked;
 
     // Policy
-    static bool isPacketAllowed(const BridgeFilterPolicy& bridge_filter_policy, mesh::Packet *pkt);
-    static bool isPolicyEnabled(const BridgeFilterPolicy &bridge_filter_policy) {
-      return bridge_filter_policy.policy > 0 || bridge_filter_policy.blockedChannelCount > 0;
+    static bool isPacketAllowed(const BridgeFilterPolicy& policy, mesh::Packet *pkt);
+    static bool isPolicyEnabled(const BridgeFilterPolicy &policy) {
+      return policy.policy > 0 || policy.blockedFirstBytesCount > 0 || policy.blockedHTagCount > 0;
     }
 
-    static void clearPolicy(BridgeFilterPolicy& bridge_filter_policy) {
-      bridge_filter_policy.policy = 0;
-      bridge_filter_policy.blockedChannelCount = 0;
+    static void clearPolicy(BridgeFilterPolicy& policy) {
+      policy.policy = 0;
+      policy.blockedFirstBytesCount = 0;
+      policy.blockedHTagCount = 0;
     }
 
     // Adverts
-    static bool isAdvertsBlocked(const BridgeFilterPolicy& bridge_filter_policy) { return bridge_filter_policy.policy & 0b00000001; }
-    static void blockAdverts(BridgeFilterPolicy& bridge_filter_policy) { bridge_filter_policy.policy |= 0b00000001; }
+    static bool isAdvertsBlocked(const BridgeFilterPolicy& policy) { return policy.policy & 0b00000001; }
+    static void blockAdverts(BridgeFilterPolicy& policy) { policy.policy |= 0b00000001; }
     
     // Public channel
-    static bool isPublicBlocked(const BridgeFilterPolicy& bridge_filter_policy) { return bridge_filter_policy.policy & 0b00000010; }
-    static void blockPublic(BridgeFilterPolicy& bridge_filter_policy) { bridge_filter_policy.policy |= 0b00000010; }
+    static bool isPublicBlocked(const BridgeFilterPolicy& policy) { return policy.policy & 0b00000010; }
+    static void blockPublic(BridgeFilterPolicy& policy) { policy.policy |= 0b00000010; }
 
     // Blocked channels by first 1-byte channel hash
-    static bool isChannelBlocked(const BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte);
-    static bool addBlockedChannel(BridgeFilterPolicy& bridge_filter_policy, uint8_t channel_hash_1byte);
-    static bool deleteBlockedChannel(BridgeFilterPolicy &bridge_filter_policy, uint8_t channel_hash_1byte);
+    static bool isBlockedFirstByte(const BridgeFilterPolicy& policy, uint8_t channel_hash_1byte);
+    static bool addBlockedFirstByte(BridgeFilterPolicy& policy, uint8_t channel_hash_1byte);
+    static bool deleteBlockedFirstByte(BridgeFilterPolicy &policy, uint8_t channel_hash_1byte);
+
+    // Blocked channels by PSKs
+    static bool isBlockedHTag(const BridgeFilterPolicy &policy, const char* htag);
+    static bool addBlockedHTag(BridgeFilterPolicy& policy, const char* htag);
+    static bool deleteBlockedHTag(BridgeFilterPolicy &policy, const char* htag);
+
   }; // BridgeFilter
 } // namespace mesh
