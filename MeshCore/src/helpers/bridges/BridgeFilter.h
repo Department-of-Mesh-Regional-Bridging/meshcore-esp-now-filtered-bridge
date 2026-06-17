@@ -35,6 +35,7 @@ namespace mesh {
     static uint32_t bridgefilter_stats_tx_blocked;
     static uint32_t bridgefilter_stats_rx_received;
     static uint32_t bridgefilter_stats_rx_blocked;
+    static uint32_t bridgefilter_stats_htag_blocked[BRIDGE_FILTER_BLOCKEDHTAGS_MAX];
 
     // Policy
     static bool isPacketAllowed(const BridgeFilterPolicy& policy, mesh::Packet *pkt);

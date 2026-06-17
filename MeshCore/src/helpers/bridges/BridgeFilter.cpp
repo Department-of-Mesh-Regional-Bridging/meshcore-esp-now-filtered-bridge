@@ -12,6 +12,7 @@ namespace mesh {
   uint32_t mesh::BridgeFilter::bridgefilter_stats_tx_blocked = 0;
   uint32_t mesh::BridgeFilter::bridgefilter_stats_rx_received = 0;
   uint32_t mesh::BridgeFilter::bridgefilter_stats_rx_blocked = 0;
+  uint32_t mesh::BridgeFilter::bridgefilter_stats_htag_blocked[BRIDGE_FILTER_BLOCKEDHTAGS_MAX] = { 0};
 
   // https://emn178.github.io/online-tools/sha256.html
   // Private key of Public channel: 8b3387e9c5cdea6ac9e5edbaa115cd72
@@ -68,6 +69,9 @@ namespace mesh {
             // Decoded message
             char *message = (char *)&dest[5];
             BRIDGEFILTER_DEBUG_PRINTLN("Hashtag %s message: %s", hashtag, message);
+
+            // Statistics
+            bridgefilter_stats_htag_blocked[i]++;
             return false; // Block
           } else {
             BRIDGEFILTER_DEBUG_PRINTLN("Not hashtag %s message", hashtag);
@@ -178,11 +182,13 @@ namespace mesh {
         for (uint8_t j = i; j + 1 < policy.blockedHTagCount; j++) {
           memcpy(policy.blockedHTags[j], policy.blockedHTags[j + 1], BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
           memcpy(policy.blockedPSKs[j], policy.blockedPSKs[j + 1], PUB_KEY_SIZE);
+          mesh::BridgeFilter::bridgefilter_stats_htag_blocked[j] = mesh::BridgeFilter::bridgefilter_stats_htag_blocked[j + 1];
         }
 
         // clear last slot (important for flash consistency)
         memset(policy.blockedHTags[policy.blockedHTagCount - 1], 0, BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
         memset(policy.blockedPSKs[policy.blockedHTagCount - 1], 0, PUB_KEY_SIZE);
+        mesh::BridgeFilter::bridgefilter_stats_htag_blocked[policy.blockedHTagCount - 1] = 0;
 
         // Reduce the count
         policy.blockedHTagCount--;

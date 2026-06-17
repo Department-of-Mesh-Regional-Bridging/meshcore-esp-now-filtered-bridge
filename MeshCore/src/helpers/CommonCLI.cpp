@@ -1015,6 +1015,12 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
             mesh::BridgeFilter::bridgefilter_stats_tx_blocked,
             mesh::BridgeFilter::bridgefilter_stats_rx_received,
             mesh::BridgeFilter::bridgefilter_stats_rx_blocked);
+
+    for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedHTagCount; i++) {
+      sprintf(reply + strlen(reply), " %s: %u blocked.",
+              (char *)_prefs->bridge_filter_policy.blockedHTags[i],
+              mesh::BridgeFilter::bridgefilter_stats_htag_blocked[i]);
+    }
   } else if (memcmp(config, "bridge.filter", 13) == 0) {
     if (!mesh::BridgeFilter::isPolicyEnabled(_prefs->bridge_filter_policy)) {
       sprintf(reply, "> blocked: none");
