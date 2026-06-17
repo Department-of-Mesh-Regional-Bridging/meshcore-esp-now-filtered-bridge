@@ -807,18 +807,18 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     _callbacks->restartBridge();
     savePrefs();
     strcpy(reply, "OK");
-  } else if (memcmp(config, "bridge.filter adverts", 21) == 0) {
-    mesh::BridgeFilter::blockAdverts(_prefs->bridge_filter_policy);
-    savePrefs();
-    strcpy(reply, "adverts blocked");
-  } else if (memcmp(config, "bridge.filter public", 20) == 0) {
-    mesh::BridgeFilter::blockPublic(_prefs->bridge_filter_policy);
-    savePrefs();
-    strcpy(reply, "public blocked");
   } else if (memcmp(config, "bridge.filter clear", 19) == 0) {
     mesh::BridgeFilter::clearPolicy(_prefs->bridge_filter_policy);
     savePrefs();
-    strcpy(reply, "cleared");
+    strcpy(reply, "all unblocked");
+  } else if (memcmp(config, "bridge.filter add advert", 24) == 0) {
+    mesh::BridgeFilter::blockAdverts(_prefs->bridge_filter_policy);
+    savePrefs();
+    strcpy(reply, "adverts blocked");
+  } else if (memcmp(config, "bridge.filter add public", 24) == 0) {
+    mesh::BridgeFilter::blockPublic(_prefs->bridge_filter_policy);
+    savePrefs();
+    strcpy(reply, "public blocked");
   } else if (memcmp(config, "bridge.filter add ", 18) == 0) {
     const char *arg = &config[18];
     if (arg[0] == '#') { // Hashtag
@@ -837,6 +837,14 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
         strcpy(reply, "first-byte filter full");
       }
     }
+  } else if (memcmp(config, "bridge.filter del advert", 24) == 0) {
+    mesh::BridgeFilter::unblockAdverts(_prefs->bridge_filter_policy);
+    savePrefs();
+    strcpy(reply, "adverts unblocked");
+  } else if (memcmp(config, "bridge.filter del public", 24) == 0) {
+    mesh::BridgeFilter::unblockPublic(_prefs->bridge_filter_policy);
+    savePrefs();
+    strcpy(reply, "public unblocked");
   } else if (memcmp(config, "bridge.filter del ", 18) == 0) {
     const char *arg = &config[18];
     if (arg[0] == '#') { // Hashtag
@@ -1000,7 +1008,7 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
   } else if (memcmp(config, "bridge.source", 13) == 0) {
     sprintf(reply, "> %s", _prefs->bridge_pkt_src ? "logRx" : "logTx");
   } else if (memcmp(config, "bridge.filter?", 14) == 0) {
-    sprintf(reply, "> adverts, public, clear, add/del <1-byte hash>");
+    sprintf(reply, "> clear, add/del public/advert/<1-byte hash>/<htag>");
   } else if (memcmp(config, "bridge.filter stats", 19) == 0) {
     sprintf(reply, "> TX: %d sent, %d blocked. RX: %d received, %d blocked.", 
             mesh::BridgeFilter::bridgefilter_stats_tx_sent,
@@ -1026,7 +1034,10 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
       }
 
       for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedHTagCount; i++) {
-        sprintf(reply + strlen(reply), " %s", (char *)_prefs->bridge_filter_policy.blockedHTags[i]);
+        sprintf(
+            reply + strlen(reply), " %s (%02x%02x%02x)", (char *)_prefs->bridge_filter_policy.blockedHTags[i],
+            _prefs->bridge_filter_policy.blockedPSKs[i][0], _prefs->bridge_filter_policy.blockedPSKs[i][1],
+            _prefs->bridge_filter_policy.blockedPSKs[i][2]);
       }
     }
     sprintf(reply + strlen(reply), "\r\n? for help");

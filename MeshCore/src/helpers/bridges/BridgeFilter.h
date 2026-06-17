@@ -7,6 +7,7 @@
 #define BRIDGE_FILTER_BLOCKEDFIRSTBYTES_MAX 8
 #define BRIDGE_FILTER_BLOCKEDHTAGS_MAX 16
 #define BRIDGE_FILTER_BLOCKEDHTAGS_LEN 31
+#define BRIDGE_FILTER_BLOCKEDPSKS_MAX 16
 
 namespace mesh {
 
@@ -25,6 +26,7 @@ namespace mesh {
 
       // Hashtag blocking
       char blockedHTags[BRIDGE_FILTER_BLOCKEDHTAGS_MAX][BRIDGE_FILTER_BLOCKEDHTAGS_LEN];
+      uint8_t blockedPSKs[BRIDGE_FILTER_BLOCKEDPSKS_MAX][PUB_KEY_SIZE]; // Keep PSK of hashtags
       uint8_t blockedHTagCount = 0;
     };
 
@@ -49,10 +51,12 @@ namespace mesh {
     // Adverts
     static bool isAdvertsBlocked(const BridgeFilterPolicy& policy) { return policy.policy & 0b00000001; }
     static void blockAdverts(BridgeFilterPolicy& policy) { policy.policy |= 0b00000001; }
+    static void unblockAdverts(BridgeFilterPolicy& policy) { policy.policy &= ~0b00000001; }
     
     // Public channel
     static bool isPublicBlocked(const BridgeFilterPolicy& policy) { return policy.policy & 0b00000010; }
     static void blockPublic(BridgeFilterPolicy& policy) { policy.policy |= 0b00000010; }
+    static void unblockPublic(BridgeFilterPolicy& policy) { policy.policy &= ~0b00000010; }
 
     // Blocked channels by first 1-byte channel hash
     static bool isBlockedFirstByte(const BridgeFilterPolicy& policy, uint8_t channel_hash_1byte);

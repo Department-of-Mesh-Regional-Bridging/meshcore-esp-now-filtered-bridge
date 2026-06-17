@@ -62,14 +62,8 @@ namespace mesh {
           // Get Hashtag name
           const char* hashtag = policy.blockedHTags[i];
 
-          // Get PSK
-          uint8_t shared_secret[PUB_KEY_SIZE] = {0};
-          SHA256 sha;
-          sha.update(hashtag, strlen(hashtag));
-          sha.finalize(shared_secret, 16);
-
           uint8_t dest[MAX_PACKET_PAYLOAD];
-          int len = mesh::Utils::MACThenDecrypt(shared_secret, dest, &pkt->payload[1], pkt->payload_len - 1);
+          int len = mesh::Utils::MACThenDecrypt(policy.blockedPSKs[i], dest, &pkt->payload[1], pkt->payload_len - 1);
           if (len > 0) { // Able to decode
             // Decoded message
             char *message = (char *)&dest[5];
@@ -147,7 +141,7 @@ namespace mesh {
   bool BridgeFilter::addBlockedHTag(BridgeFilterPolicy &policy, const char* htag) {
     // avoid duplicates
     for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
-      if (memcmp(policy.blockedHTags[i], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN) == 0) {
+      if (strcmp(policy.blockedHTags[i], htag) == 0) {
         return true;
       }
     }
@@ -157,18 +151,40 @@ namespace mesh {
       return false;
     }
 
-    memcpy(policy.blockedHTags[policy.blockedHTagCount], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+    // must fit in destination buffer including '\0'
+    if (strlen(htag) >= BRIDGE_FILTER_BLOCKEDHTAGS_LEN) {
+      return false;
+    }
+
+    // Add hashtag
+    memset(policy.blockedHTags[policy.blockedHTagCount], 0, BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+    strcpy(policy.blockedHTags[policy.blockedHTagCount], htag);
+
+    // Get PSK of hashtag
+    uint8_t shared_secret[PUB_KEY_SIZE] = { 0 };
+    SHA256 sha;
+    sha.update(htag, strlen(htag));
+    sha.finalize(shared_secret, 16);
+
+    // Add PSK
+    memcpy(policy.blockedPSKs[policy.blockedHTagCount], shared_secret, PUB_KEY_SIZE);
     policy.blockedHTagCount++;
     return true;
   }
 
-  bool BridgeFilter::deleteBlockedHTag(BridgeFilterPolicy &policy, const char* htag) {
+  bool BridgeFilter::deleteBlockedHTag(BridgeFilterPolicy &policy, const char *htag) {
     for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
-      if (memcmp(policy.blockedHTags[i], htag, BRIDGE_FILTER_BLOCKEDHTAGS_LEN) == 0) {
+      if (strcmp(policy.blockedHTags[i], htag) == 0) {
         for (uint8_t j = i; j + 1 < policy.blockedHTagCount; j++) {
           memcpy(policy.blockedHTags[j], policy.blockedHTags[j + 1], BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+          memcpy(policy.blockedPSKs[j], policy.blockedPSKs[j + 1], PUB_KEY_SIZE);
         }
 
+        // clear last slot (important for flash consistency)
+        memset(policy.blockedHTags[policy.blockedHTagCount - 1], 0, BRIDGE_FILTER_BLOCKEDHTAGS_LEN);
+        memset(policy.blockedPSKs[policy.blockedHTagCount - 1], 0, PUB_KEY_SIZE);
+
+        // Reduce the count
         policy.blockedHTagCount--;
         return true;
       }
