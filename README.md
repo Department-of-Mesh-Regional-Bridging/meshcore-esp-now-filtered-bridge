@@ -1,4 +1,10 @@
-<img width="400" height="400" alt="filtered_bridge_logo_small" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />  # MeshCore / ESP-NOW Crossband Bridge Filter
+<p align="center">
+  <h1 align="center"><img width="150" height="150" alt="MeshCore Filtered Bridge Logo" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" /> M E S H C O R E / ESP-NOW F I L T E R E D  B R I D G E</h1>
+  <p align="center"><strong>Global Threat Intercept — Real-Time Geospatial Intelligence Platform</strong></p>
+  <p align="center">
+
+  </p>
+</p>
 
 <img width="1536" height="1024" alt="filtered_bridge_hero" src="https://github.com/user-attachments/assets/0dba7791-e350-4121-87a0-9099fee88bc0" />
 
