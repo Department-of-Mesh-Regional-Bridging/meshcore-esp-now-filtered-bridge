@@ -1,4 +1,4 @@
-       <img width="400" height="400" alt="filtered_bridge_logo_small" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />  # MeshCore / ESP-NOW Crossband Bridge Filter
+<img width="400" height="400" alt="filtered_bridge_logo_small" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />  # MeshCore / ESP-NOW Crossband Bridge Filter
 
 <img width="1536" height="1024" alt="filtered_bridge_hero" src="https://github.com/user-attachments/assets/0dba7791-e350-4121-87a0-9099fee88bc0" />
 
