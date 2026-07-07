@@ -1,4 +1,8 @@
 # MeshCore / ESP-NOW Crossband Bridge Filter
+
+<img width="1536" height="1024" alt="filtered_bridge_hero" src="https://github.com/user-attachments/assets/0dba7791-e350-4121-87a0-9099fee88bc0" />
+
+
 We are an Organization Dedicated to Promoting, Healthy, Federated, and Intelligently-Scalable MeshCore Networks
 ## Mission
 To enable intentional, low‑noise communication between independent MeshCore regions operating on different frequency settings—while filtering out common non‑essential flood traffic and preserving the long‑term sanity of the mesh ecosystem.
