@@ -1,34 +1,40 @@
-<p align="center">
-  <h1 align="center"><img width="150" height="150" alt="MeshCore Filtered Bridge Logo" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" /> M E S H C O R E / ESP-NOW F I L T E R E D  B R I D G E</h1>
-  <p align="center"><strong>Global Threat Intercept — Real-Time Geospatial Intelligence Platform</strong></p>
+  <table>
+  <tr>
+    <td>
+      <p align="center">
+      <img width="150" height="150" alt="MeshCore Filtered Bridge Logo" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />
+      </td>
+    <td>
+      <h1 align="center">MESHCORE / ESP-NOW<br>F I L T E R E D&ensp;B R I D G E</h1>
+  <p align="center"><strong>Part of An Organization Dedicated to Producing Tools to Promote Healthy, Federated, and Intelligently-Scalable MeshCore Networks</strong></p>
   <p align="center">
-
   </p>
 </p>
+   </td>
+  </tr>
+</table>
 
 <img width="1536" height="1024" alt="filtered_bridge_hero" src="https://github.com/user-attachments/assets/0dba7791-e350-4121-87a0-9099fee88bc0" />
 
 
-We are an Organization Dedicated to Promoting, Healthy, Federated, and Intelligently-Scalable MeshCore Networks
+
 ## Mission
 To enable intentional, low‑noise communication between independent MeshCore regions operating on different frequency settings—while filtering out common non‑essential flood traffic and preserving the long‑term sanity of the mesh ecosystem.
 
 # Overview
-The Crossband Filtered Bridge is a dual‑radio ESP‑NOW system that links two MeshCore regions without forcing them to share the same RF environment.
-It selectively forwards only meaningful traffic, preventing cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes.
+The Filtered Bridge is a dual‑radio ESP‑NOW system that links two MeshCore regions without forcing them to share the same RF environment.
+It selectively forwards only meaningful traffic, preventing cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes. It also allows admins of the bridge to specify common hashtag channels for blocking messages from crossing the bridge (eg; #test, #bot, #wardriving etc;) thereby keeping the responses region-specific. This project promotes regional autonomy, mesh hygiene, cooperative inter‑mesh communication, and regional community.
 
-For instance, while its nice to receive a "Good Morning Mesh" message in the main Public channel from someone nearby, the cacophony of these messages from far-off locales tends to dull the experience over time.
-
-This project promotes regional autonomy, mesh hygiene, and cooperative inter‑mesh communication.
+For example, while its nice to receive a "Good Morning Mesh" message in the main Public channel from someone nearby, the cacophony of these messages from far-off locales tends to dull the experience over time.
 
 ## Key Features
-Customizable Packet Filtering
+<strong>Customizable Packet Filtering</strong>
 
-CLI‑controlled filtering of:    
-    
+CLI‑controlled filtering of:
+
     - Adverts
     - Main Public channel
-    - Up to 8 hashtag channels
+    - Up to 32 hashtag channels
 
 Supports granular control of what crosses the bridge
 (e.g., #sacsfbridge for inter‑mesh threaded communication corridors)
