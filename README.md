@@ -47,7 +47,7 @@ The Crossband Filtered Bridge will still allow (and message types that persist) 
 ## Why This Matters
 We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  E.G.; Southern California, The Netherlands, and Sacramento Foothills are prime case studies that bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
 
-##Modern MeshCore meshes face challenges as they grow:
+## Modern MeshCore meshes face challenges as they grow:
     
     - Maximizing and perserving link budget
     - Advert storms
@@ -59,6 +59,6 @@ We believe that a good vector to scaling up MeshCore meshes moving forward would
 The Crossband Filtered Bridge helps to address these challenges by acting as a selective gateway, not a simple common repeater.
 It forwards only what should cross, thereby minimizing a large percentage of cascading traffic and helps to preserve the integrity and performance of each region.
 
-#Current Limitations
+# Current Limitations
 ***blocking more than 4-5 hashtag channels affects the CLI response to get bridge.filter because of the limitations of the 150 byte response on CLI commands.  Recommended workaround is to keep track of blocked hashtag channels in notepad/obsidian/spreadsheet in order to facilitate unblocking.
 ***Filtered Bridge is power hungry. Take your power soution to the bridge seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
