@@ -44,8 +44,15 @@ The Crossband Filtered Bridge will still allow (and message types that persist) 
     - Can still retrieve path prefix data (1, 2, or 3 byte) of messages,from origin to destination,
       that transit across the bridge
 
+## How Does the Filtered Bridge Work?
+
+<img width="1635" height="1227" alt="Filtered_Bridge_Message_Flow_Diagram" src="https://github.com/user-attachments/assets/4b0c46ed-febc-45c5-b3be-86a9ac493836" />
+
+
 ## Why This Matters
-We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  E.G.; Southern California, The Netherlands, and Sacramento Foothills are prime case studies that bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
+We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  For example, public utility meters in Southern California crowded the standard US frequency range so they adopted 927.875 frequency setting. The Netherlands reached a repeater density that led to severe airtime congestion and they opted to change their spreading factor. The Sacramento Valley Foothills Mesh utilizes a higher spreading factor because of its varying topography. These are prime case studies that, we believe, bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
+
+If, moving forwared, Regional meshes can adopt settings that are optimal for their particular environment, then they can focus and grow their region and avoid threshold collapse. Then, filtered bridges can be deployed on the edges of these regions to facilitate crossband communication corridors between the regions.
 
 ## Modern MeshCore meshes face challenges as they grow:
     
