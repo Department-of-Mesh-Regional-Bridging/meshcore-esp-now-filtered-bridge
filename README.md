@@ -74,10 +74,12 @@ It forwards only what should cross, thereby minimizing a large percentage of cas
 Make sure you have at least 2 Heltec v3 or v4 boards.
 Download either the fresh intall or upgrade bin files below for flashing:
 ## HELTEC V3 Filtered Bridge Firmware Files:
-[Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)<br>
+[Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
+
 [Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin)
 ## HELTEC V4 Filtered Bridge Firmware Files:
-[heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)<br>
+[heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
+
 [heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin)
 
 
