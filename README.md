@@ -59,6 +59,9 @@ We believe that a good vector to scaling up MeshCore meshes moving forward would
 The Crossband Filtered Bridge helps to address these challenges by acting as a selective gateway, not a simple common repeater.
 It forwards only what should cross, thereby minimizing a large percentage of cascading traffic and helps to preserve the integrity and performance of each region.
 
-# Current Limitations
-***blocking more than 4-5 hashtag channels affects the CLI response to get bridge.filter because of the limitations of the 150 byte response on CLI commands.  Recommended workaround is to keep track of blocked hashtag channels in notepad/obsidian/spreadsheet in order to facilitate unblocking.
-***Filtered Bridge is power hungry. Take your power soution to the bridge seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
+## Current Limitations
+***blocking more than 4-5 hashtag channels affects the CLI response to get bridge.filter because of the limitations of the 150 byte response on CLI commands.  Recommended workaround is to keep track of blocked hashtag channels in notepad/obsidian/spreadsheet in order to facilitate unblocking.<br>
+***Filtered Bridge is power hungry. Take your power solution to the bridge seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
+
+## How Can I Create One Of These Bridges?
+Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You only need the filtered bridge firmware to be flashed to a minimum of 1 of the two repeaters for the bridge to work - it filters theflags set on both tx and rx. However, you will be limited to blocking 16 hashtag channels. To block 17 to 32 hashtag channels you must flash both repeaters with the appropriate firmware on the bridge. A filtered bridge always requires two (or more) ESP32 based repeaters to function. Yes, it has been tested with up to 4 repeaters on different frequency settings and it works well.
