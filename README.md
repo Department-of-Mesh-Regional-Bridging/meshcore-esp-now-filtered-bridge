@@ -46,13 +46,13 @@ The Crossband Filtered Bridge will still allow (and message types that persist) 
 
 ## How Does the Filtered Bridge Work?
 
-<img width="1635" height="1227" alt="Filtered_Bridge_Message_Flow_Diagram" src="https://github.com/user-attachments/assets/4b0c46ed-febc-45c5-b3be-86a9ac493836" />
+<img width="1635" height="1227" alt="Filtered_Bridge_Message_Flow_Diagram" src="https://github.com/user-attachments/assets/aeac0161-2161-4762-81da-a7e7e6a87c51" />
 
 
 ## Why This Matters
-We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  For example, public utility meters in Southern California crowded the standard US frequency range so they adopted 927.875 frequency setting. The Netherlands reached a repeater density that led to severe airtime congestion and they opted to change their spreading factor. The Sacramento Valley Foothills Mesh utilizes a higher spreading factor because of its varying topography. These are prime case studies that, we believe, bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
+We believe that a good strategy to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  For example, public utility meters in Southern California crowded the standard US frequency range so they adopted 927.875 frequency setting. The Netherlands reached a repeater density that led to severe airtime congestion and they opted to change their spreading factor. The Sacramento Valley Foothills Mesh utilizes a higher spreading factor because of its varying topography. These are prime case studies that, we believe, bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
 
-If, moving forwared, Regional meshes can adopt settings that are optimal for their particular environment, then they can focus and grow their region and avoid threshold collapse. Then, filtered bridges can be deployed on the edges of these regions to facilitate crossband communication corridors between the regions.
+If, moving forwared, Regional meshes can adopt settings that are optimal for their particular environment, then they can focus and grow their region and avoid threshold collapse. Then, filtered bridges can be deployed on the edges of these regions to facilitate crossband communication corridors between the regions and extending message reach.
 
 ## Modern MeshCore meshes face challenges as they grow:
     
@@ -68,7 +68,19 @@ It forwards only what should cross, thereby minimizing a large percentage of cas
 
 ## Current Limitations
 ***blocking more than 4-5 hashtag channels affects the CLI response to get bridge.filter because of the limitations of the 150 byte response on CLI commands.  Recommended workaround is to keep track of blocked hashtag channels in notepad/obsidian/spreadsheet in order to facilitate unblocking.<br>
-***Filtered Bridge is power hungry. Take your power solution to the bridge seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
+***Filtered Bridge is power hungry. Take your power solution for the bridge deployment seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
+
+## Filtered Bridge Setup Instructions
+Make sure you have at least 2 Heltec v3 or v4 boards.
+Download either the fresh intall or upgrade bin files below for flashing:
+## HELTEC V3 Filtered Bridge Firmware Files:
+[Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
+[Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin)
+## HELTEC V4 Filtered Bridge Firmware Files:
+[heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
+[heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin)
+
+
 
 ## How Can I Create One Of These Bridges?
 Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You only need the filtered bridge firmware to be flashed to a minimum of 1 of the two repeaters for the bridge to work - it filters the flags set on both tx and rx. However, you will be limited to blocking 16 hashtag channels. To block 17 to 32 hashtag channels you must flash both repeaters with the appropriate firmware and set the blocking flags on each of the bridges independently. A filtered bridge always requires two (or more) ESP32 based repeaters to function. Yes, it has been tested with up to 4 repeaters on different frequency settings and it works well. Theoretically, it will work with many more repeaters.
