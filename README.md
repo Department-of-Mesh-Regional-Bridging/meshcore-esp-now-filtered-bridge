@@ -27,7 +27,7 @@ It empowers bridge admins to selectively forward traffic by blocking Adverts, Pu
 For example, while its nice to receive a "Good Morning Mesh" message in the main Public channel from someone nearby, the cacophony of these messages from far-off locales tends to dull the experience over time.
 
 ## Key Features
-###Customizable CLI‑controlled Packet Filtering of:
+(strong)Customizable CLI‑controlled Packet Filtering of:(/strong)
 
     - Adverts (flood and zero-hop)
     - Main Public channel
@@ -47,7 +47,7 @@ The Crossband Filtered Bridge will still allow (and message types that persist) 
 ## Why This Matters
 We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the regional needs (both known and unknown) that would justify modifying those settings.  E.G.; Southern California, The Netherlands, and Sacramento Foothills are prime case studies that bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding. Also, this crossband filtered bridge dovetails with the region and scoping effort being rolled out by MeshCore.
 
-###Modern MeshCore meshes face challenges as they grow:
+##Modern MeshCore meshes face challenges as they grow:
     
     - Maximizing and perserving link budget
     - Advert storms
