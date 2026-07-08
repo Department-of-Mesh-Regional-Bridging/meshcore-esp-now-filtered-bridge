@@ -22,23 +22,21 @@ To enable intentional, lower‑noise communication between independent MeshCore 
 # Overview
 The Filtered Bridge is a two (or more) repeater ESP‑NOW system that links two (or more) MeshCore regions without forcing them to share the same RF settings.
 
-It also empowers bridge admins to selectively forward traffic, which mitigates cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes. It also allows admins of the bridge to specify common hashtag channels for blocking messages from crossing the bridge (eg; #test, #bot, #wardriving etc;) thereby keeping the responses region-specific. This project promotes regional autonomy, mesh hygiene, cooperative inter‑mesh communication, and regional community.
+It also empowers bridge admins to selectively forward traffic by blocking Adverts, Public channel which mitigates cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes. In addition, admins can specify up to 32 hashtag channels for blocking messages from crossing the bridge (eg; #test, #bot, #wardriving etc;) thereby keeping the responses region-specific. This project promotes regional autonomy, mesh hygiene, cooperative inter‑mesh communication, and regional community.
 
 For example, while its nice to receive a "Good Morning Mesh" message in the main Public channel from someone nearby, the cacophony of these messages from far-off locales tends to dull the experience over time.
 
 ## Key Features
-<strong>Customizable Packet Filtering</strong>
+###Customizable CLI‑controlled Packet Filtering of:
 
-CLI‑controlled filtering of:
-
-    - Adverts
+    - Adverts (flood and zero-hop)
     - Main Public channel
     - Up to 32 hashtag channels (16 hashtag channels per repeater)
 
 Supports granular control of what crosses the bridge
 (e.g., #sacsfbridge for inter‑mesh communication corridors)
 
-The Crossband Filtered Bridge will still allow, and message types that persist, across the bridge:
+The Crossband Filtered Bridge will still allow (and message types that persist) across the bridge:
     
     - Private messages
     - Private groups
@@ -46,10 +44,13 @@ The Crossband Filtered Bridge will still allow, and message types that persist, 
     - Can still retrieve path data (1, 2, or 3 byte) from origin to destination of messages that transit across the bridge
 
 ## Why This Matters
-Modern MeshCore meshes face challenges as they grow:
+We believe that a good vector to scaling up MeshCore meshes moving forward would be to encourage established or growing MeshCore regions to adopt a segmented, regional custom-tailored settings approach. A flat mesh does not scale. Expecting everyone to adopt the 910.525/62.5/7/5 as a standard ignores the needs (both known and unknown) that would justify modifying those settings.  E.G.; Southern California, The Netherlands, and Sacramento Foothills are prime case studies that bolster this theory. We understand that this presents hurdles to onboarding new users but we also believe that these hurdles can be overcome with technology and disseminating info during onboarding.
+
+###Modern MeshCore meshes face challenges as they grow:
     
+    - Maximizing and perserving link budget
     - Advert storms
-    - Publicchannel super-saturation
+    - Public channel super-saturation
     - Region bleed‑through
     - Frequency mismatches for repeater density and topography
     - Eventual Mesh threshold collapse due to excessive node count
