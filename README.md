@@ -27,7 +27,7 @@ It empowers bridge admins to selectively forward traffic by blocking Adverts, Pu
 For example, while its nice to receive a "Good Morning Mesh" message in the main Public channel from someone nearby, the cacophony of these messages from far-off locales tends to dull the experience over time.
 
 ## Key Features
-(strong)Customizable CLI‑controlled Packet Filtering of:(/strong)
+### Customizable CLI‑controlled Packet Filtering of:
 
     - Adverts (flood and zero-hop)
     - Main Public channel
@@ -64,4 +64,4 @@ It forwards only what should cross, thereby minimizing a large percentage of cas
 ***Filtered Bridge is power hungry. Take your power solution to the bridge seriously. Powersaving features of 1.16 can *not* be applied to the ESP-NOW bridge. Unfortunate, but we are actively searching for an elegant solution.
 
 ## How Can I Create One Of These Bridges?
-Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You only need the filtered bridge firmware to be flashed to a minimum of 1 of the two repeaters for the bridge to work - it filters the flags set on both tx and rx. However, you will be limited to blocking 16 hashtag channels. To block 17 to 32 hashtag channels you must flash both repeaters with the appropriate firmware and set the blocking flags on each of the bridges independently. A filtered bridge always requires two (or more) ESP32 based repeaters to function. Yes, it has been tested with up to 4 repeaters on different frequency settings and it works well. Theoretically, it will work with many more.
+Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You only need the filtered bridge firmware to be flashed to a minimum of 1 of the two repeaters for the bridge to work - it filters the flags set on both tx and rx. However, you will be limited to blocking 16 hashtag channels. To block 17 to 32 hashtag channels you must flash both repeaters with the appropriate firmware and set the blocking flags on each of the bridges independently. A filtered bridge always requires two (or more) ESP32 based repeaters to function. Yes, it has been tested with up to 4 repeaters on different frequency settings and it works well. Theoretically, it will work with many more repeaters.
