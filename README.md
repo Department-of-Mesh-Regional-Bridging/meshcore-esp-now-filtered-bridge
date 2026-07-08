@@ -2,10 +2,10 @@
   <tr>
     <td>
       <p align="center">
-      <img width="150" height="150" alt="MeshCore Filtered Bridge Logo" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />
+      <img width="250" height="250" alt="MeshCore Filtered Bridge Logo" src="https://github.com/user-attachments/assets/59ee6b99-a924-47f8-af90-9255d6da59e1" />
       </td>
     <td>
-      <h1 align="center">MESHCORE / ESP-NOW<br>F I L T E R E D&ensp;B R I D G E</h1>
+      <h1 align="center">MESHCORE / ESP-NOW<br>:: F I L T E R E D&ensp;B R I D G E ::</h1>
   <p align="center"><strong>Part of An Organization Dedicated to Producing Tools to Promote Healthy, Federated, and Intelligently-Scalable MeshCore Networks</strong></p>
   <p align="center">
   </p>
