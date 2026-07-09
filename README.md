@@ -100,9 +100,9 @@ Link to MeshCore.io docs for all Bridge (non-filtered) CLI commands: [Bridge CLI
 
 ## Filtered Bridge CLI Commands
 
-### The following set of CLI commands are unique to this filtered bridge implementation and facilitate the blocking of various message types.
+## The following set of CLI commands are unique to this filtered bridge implementation and facilitate the blocking of various message types.
 
-Block or unblock all Adverts
+### Block or unblock all Adverts
 
 Usage:
   - `set bridge.filter add adverts` (to block)
