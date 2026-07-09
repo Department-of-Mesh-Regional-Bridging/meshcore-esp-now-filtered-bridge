@@ -84,6 +84,7 @@ Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You o
 [heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
 
 [heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/heltec_v4_repeater_bridge_espnow-BridgeFilter-2.1-upgrade.bin)
+
 [] Proceed to the official [Meshcore.io Flasher](https://meshcore.io/flasher) and flash your boards
 [] Configure each of the repeaters to your desired settings. For a crossband bridge define the different frequency settings on each repeater.
 [] You will need to run the following CLI commands on each repeater via the console on the repeater configuration screen
