@@ -103,14 +103,14 @@ Link to MeshCore.io docs for all Bridge (non-filtered) CLI commands: [Bridge CLI
 ### The following set of CLI commands are unique to this filtered bridge implementation and facilitate the blocking of various message types.
 
 ### Block or unblock all Adverts
-
+<br>
 Usage:  - `set bridge.filter add adverts` (to block)
         - `set bridge.filter del adverts` (to unblock)
 Response:  - adverts blocked
            - adverts unblocked
            
 ### Block or unblock Public channel (this is the default common Public channel that is added to all MeshCore app installs)
-
+<br>
 Usage:  - `set bridge.filter add Public` (to block)
         - `set bridge.filter del Public` (to unblock)
 
@@ -118,7 +118,7 @@ Response:  - `public blocked`
            - `public unblocked`
 
 ### Block or unblock hashtag channels (Must add # to name of hashtag channel. up to 16 channels blockable per filtered bridge enabled repeater)
-
+<br>
 Usage:  - `set bridge.filter add #hashtagchannel` (to block)
         - `set bridge.filter del #hashtagchannel` (to unblock)
 
@@ -126,13 +126,13 @@ Response: - `hashtag #hashtagchannel blocked`
           - `hashtag #hashtagchannel unblocked`
 
 ### Retrieve list of blocked items
-
+<br>
 Usage:  - `get bridge.filter`
 
 Response: - `blocked: adverts public #hashtagchannel`
 
 ### Retrieve stats of blocked items since last reboot of repeater
-
+<br>
 Usage:  - `get bridge.filter stats`
 
 Response: - `TX:3322 Sent, 929 Blocked. RX: 886 received, 269 Blocked. #hashtagchannel: 1142 blocked`
