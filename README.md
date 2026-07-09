@@ -16,10 +16,10 @@
 
 <img width="1536" height="1024" alt="filtered_bridge_hero" src="https://github.com/user-attachments/assets/0dba7791-e350-4121-87a0-9099fee88bc0" />
 
-## Mission
+# Mission
 To enable intentional, lower‑noise communication between independent MeshCore regions operating on different frequency settings—while filtering out common non‑essential flood traffic and preserving the long‑term sanity of the mesh ecosystem.
 
-# Overview
+## Overview
 The Filtered Bridge is a two (or more) repeater MeshCore / ESP‑NOW system that links two (or more) MeshCore regions without forcing them to share the same RF settings.
 
 It empowers bridge admins to selectively forward traffic by blocking Adverts, Public channel which mitigates cross‑region noise, advert storms, and public‑channel chatter from overwhelming neighboring meshes. In addition, admins can specify up to 32 hashtag channels for blocking messages from crossing the bridge (eg; #test, #bot, #wardriving etc;) thereby keeping the responses region-specific. This project promotes regional autonomy, mesh hygiene, cooperative inter‑mesh communication, and regional community.
