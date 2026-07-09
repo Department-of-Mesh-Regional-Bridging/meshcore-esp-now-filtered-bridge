@@ -104,39 +104,39 @@ Link to MeshCore.io docs for all Bridge (non-filtered) CLI commands: [Bridge CLI
 
 ### Block or unblock all Adverts
 <br>
-Usage:  - `set bridge.filter add adverts` (to block)
-        - `set bridge.filter del adverts` (to unblock)
-Response:  - adverts blocked
-           - adverts unblocked
-           
-### Block or unblock Public channel (this is the default common Public channel that is added to all MeshCore app installs)
+Usage:  - `set bridge.filter add adverts` (to block)<br>
+        - `set bridge.filter del adverts` (to unblock)<br>
+Response:  - adverts blocked<br>
+           - adverts unblocked<br>
+           <br>
+### Block or unblock Public channel (this is the default common Public channel that is added to all MeshCore app installs)<br>
 <br>
-Usage:  - `set bridge.filter add Public` (to block)
-        - `set bridge.filter del Public` (to unblock)
-
-Response:  - `public blocked`
-           - `public unblocked`
-
+Usage:  - `set bridge.filter add Public` (to block)<br>
+        - `set bridge.filter del Public` (to unblock)<br>
+<br>
+Response:  - `public blocked`<br>
+           - `public unblocked`<br>
+<br>
 ### Block or unblock hashtag channels (Must add # to name of hashtag channel. up to 16 channels blockable per filtered bridge enabled repeater)
 <br>
-Usage:  - `set bridge.filter add #hashtagchannel` (to block)
-        - `set bridge.filter del #hashtagchannel` (to unblock)
-
-Response: - `hashtag #hashtagchannel blocked`
-          - `hashtag #hashtagchannel unblocked`
-
-### Retrieve list of blocked items
+Usage:  - `set bridge.filter add #hashtagchannel` (to block)<br>
+        - `set bridge.filter del #hashtagchannel` (to unblock)<br>
 <br>
-Usage:  - `get bridge.filter`
-
-Response: - `blocked: adverts public #hashtagchannel`
-
-### Retrieve stats of blocked items since last reboot of repeater
+Response: - `hashtag #hashtagchannel blocked`<br>
+          - `hashtag #hashtagchannel unblocked`<br>
 <br>
-Usage:  - `get bridge.filter stats`
-
-Response: - `TX:3322 Sent, 929 Blocked. RX: 886 received, 269 Blocked. #hashtagchannel: 1142 blocked`
-
+### Retrieve list of blocked items<br>
+<br>
+Usage:  - `get bridge.filter`<br>
+<br>
+Response: - `blocked: adverts public #hashtagchannel`<br>
+<br>
+### Retrieve stats of blocked items since last reboot of repeater<br>
+<br>
+Usage:  - `get bridge.filter stats`<br>
+<br>
+Response: - `TX:3322 Sent, 929 Blocked. RX: 886 received, 269 Blocked. #hashtagchannel: 1142 blocked`<br>
+<br>
 
 
 
