@@ -6,7 +6,7 @@
       </td>
     <td>
       <h1 align="center">MESHCORE / ESP-NOW<br>:: F I L T E R E D&ensp;B R I D G E ::</h1>
-  <p align="center"><strong>Part of An Organization Dedicated to Producing Tools to Promote Healthy, Federated, and Intelligently-Scalable MeshCore Networks</strong></p>
+  <p align="center"><strong>An Organization Dedicated to Producing Tools to Promote Healthy, Federated, and Intelligently-Scalable MeshCore Networks</strong></p>
   <p align="center">
   </p>
 </p>
