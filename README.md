@@ -75,7 +75,7 @@ Our Firmware is currently limited to two ESP32 boards - Heltec V3 and v4.  You o
 
 ## Filtered Bridge Setup Instructions
 [] Make sure you have at least 2 Heltec v3 or v4 boards.
-[] Download either the fresh intall or upgrade bin files below for flashing:
+[] Download either the fresh install or upgrade bin files below for flashing:
 ## HELTEC V3 Filtered Bridge Firmware Files:
 [Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin](https://github.com/Department-of-Mesh-Regional-Bridging/meshcore-esp-now-bridge-filter/releases/download/v2.1/Heltec_v3_repeater_bridge_espnow-BridgeFilter-2.1-freshInstall-merged.bin)
 
