@@ -8,7 +8,7 @@
       <h1 align="center">MESHCORE / ESP-NOW<br>:: F I L T E R E D&ensp;B R I D G E ::</h1>
   <p align="center"><strong>An Organization Dedicated to Producing Tools to Promote Healthy, Federated, and Intelligently-Scalable MeshCore Networks</strong></p>
       <p align="center"><strong> Contact: mcregbridge@gmail.com </strong></p>
-      <p align="center"><strong> Acknowledgement: Extended from [@jbrazio's RS232/ESP-NOW Bridge/cross repeater](https://github.com/meshcore-dev/MeshCore/pull/454)</strong></p>
+      <p align="center"><strong> Ack: Extended from @jbrazio's RS232/ESP-NOW Bridge/cross repeater :: https://github.com/meshcore-dev/MeshCore/pull/454 ::</strong></p>
   <p align="center">
   </p>
 </p>
