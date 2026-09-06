@@ -3,6 +3,11 @@
 
 #include "MyMesh.h"
 
+#ifdef ETHERNET_ENABLED
+  #define ETHERNET_CLI_BANNER "MeshCore Room Server CLI"
+  #include <helpers/nrf52/EthernetCLI.h>
+#endif
+
 #ifdef DISPLAY_CLASS
   #include "UITask.h"
   static UITask ui_task(display);
@@ -17,6 +22,9 @@ void halt() {
 }
 
 static char command[MAX_POST_TEXT_LEN+1];
+#ifdef ETHERNET_ENABLED
+static char ethernet_command[MAX_POST_TEXT_LEN+1];
+#endif
 
 // For power saving
 unsigned long POWERSAVING_FIRSTSLEEP_SECS = 120; // The first sleep (if enabled) from boot
@@ -26,6 +34,10 @@ void setup() {
   delay(1000);
 
   board.begin();
+
+#ifdef HAS_EXTERNAL_WATCHDOG
+  external_watchdog.begin();
+#endif
 
 #ifdef DISPLAY_CLASS
   if (display.begin()) {
@@ -70,6 +82,21 @@ void setup() {
   mesh::Utils::printHex(Serial, the_mesh.self_id.pub_key, PUB_KEY_SIZE); Serial.println();
 
   command[0] = 0;
+#ifdef ETHERNET_ENABLED
+  ethernet_command[0] = 0;
+#endif
+
+#if ENV_INCLUDE_GPS == 1
+  // Apply PowerSaving profile for GPS
+  if (sensors.getLocationProvider() != NULL) {
+    // Let CLI "gps on" call setSettingValue to enable the PowerSaving mode
+    // sensors.powersaving_enabled = true;
+    // sensors.getLocationProvider()->enablePowerSaving(true);
+
+    // GPS on and off duration in seconds
+    sensors.getLocationProvider()->setPowerSavingProfile(600, 86400); // Max 10 minutes, 1 day
+  }
+#endif
 
   sensors.begin();
 
@@ -77,6 +104,10 @@ void setup() {
 
 #ifdef DISPLAY_CLASS
   ui_task.begin(the_mesh.getNodePrefs(), FIRMWARE_BUILD_DATE, FIRMWARE_VERSION);
+#endif
+
+#ifdef ETHERNET_ENABLED
+  ethernet_start_task();
 #endif
 
   // send out initial zero hop Advertisement to the mesh
@@ -104,7 +135,14 @@ void loop() {
   if (len > 0 && command[len - 1] == '\r') {  // received complete line
     command[len - 1] = 0;  // replace newline with C string null terminator
     char reply[160];
+    reply[0] = 0;
+#ifdef ETHERNET_ENABLED
+    if (!ethernet_handle_command(command, reply)) {
+      the_mesh.handleCommand(0, command, reply);
+    }
+#else
     the_mesh.handleCommand(0, command, reply);  // NOTE: there is no sender_timestamp via serial!
+#endif
     if (reply[0]) {
       Serial.print("  -> "); Serial.println(reply);
     }
@@ -112,12 +150,28 @@ void loop() {
     command[0] = 0;  // reset command buffer
   }
 
+#ifdef ETHERNET_ENABLED
+  ethernet_loop_maintain();
+  if (ethernet_read_line(ethernet_command, sizeof(ethernet_command))) {
+    char reply[160];
+    reply[0] = 0;
+    if (!ethernet_handle_command(ethernet_command, reply)) {
+      the_mesh.handleCommand(0, ethernet_command, reply);
+    }
+    ethernet_send_reply(reply);
+    ethernet_command[0] = 0;
+  }
+#endif
+
   the_mesh.loop();
   sensors.loop();
 #ifdef DISPLAY_CLASS
   ui_task.loop();
 #endif
   rtc_clock.tick();
+#ifdef HAS_EXTERNAL_WATCHDOG
+  external_watchdog.loop();
+#endif
 
   if (the_mesh.getNodePrefs()->powersaving_enabled && !the_mesh.hasPendingWork()) {
 #if defined(NRF52_PLATFORM)

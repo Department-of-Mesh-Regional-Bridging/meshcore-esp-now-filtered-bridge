@@ -14,6 +14,7 @@ public:
   virtual bool isEnabled() const = 0;
 
   virtual bool isConnected() const = 0;
+  virtual void loop() {};
 
   virtual bool isReadBusy() const = 0;
   virtual bool isWriteBusy() const = 0;

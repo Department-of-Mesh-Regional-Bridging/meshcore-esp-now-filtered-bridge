@@ -34,11 +34,11 @@
 #define PERM_RECV_ALERTS_HI    (1 << 7)   // high priority alerts
 
 #ifndef FIRMWARE_BUILD_DATE
-  #define FIRMWARE_BUILD_DATE   "6 Jun 2026"
+  #define FIRMWARE_BUILD_DATE   "14 Aug 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
-  #define FIRMWARE_VERSION   "v1.16.0"
+  #define FIRMWARE_VERSION   "v1.17.1"
 #endif
 
 #define FIRMWARE_ROLE "sensor"
@@ -52,6 +52,9 @@ public:
   void begin(FILESYSTEM* fs);
   void loop();
   void handleCommand(uint32_t sender_timestamp, char* command, char* reply);
+  
+  // To check if there is pending work
+  bool hasPendingWork() const;
 
   // CommonCLI callbacks
   const char* getFirmwareVer() override { return FIRMWARE_VERSION; }
@@ -120,6 +123,7 @@ protected:
   uint32_t getRetransmitDelay(const mesh::Packet* packet) override;
   uint32_t getDirectRetransmitDelay(const mesh::Packet* packet) override;
   int getInterferenceThreshold() const override;
+  bool getCADEnabled() const override;
   int getAGCResetInterval() const override;
   void onAnonDataRecv(mesh::Packet* packet, const uint8_t* secret, const mesh::Identity& sender, uint8_t* data, size_t len) override;
   int searchPeersByHash(const uint8_t* hash) override;
@@ -160,6 +164,13 @@ private:
 
   #if ENV_INCLUDE_GPS == 1
   void applyGpsPrefs() {
+    // If powersaving on, apply powersaving to sensors
+    if (_prefs.powersaving_enabled) {
+      sensors.powersaving_enabled = true;
+    } else {
+      sensors.powersaving_enabled = false;
+    }
+
     sensors.setSettingValue("gps", _prefs.gps_enabled?"1":"0");
   }
 #endif

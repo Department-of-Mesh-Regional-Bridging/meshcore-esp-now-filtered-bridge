@@ -2,6 +2,7 @@
 
 #include <Arduino.h> // needed for PlatformIO
 #include <Mesh.h>
+#include "helpers/radiolib/RXPowerSaving.h"
 
 #define CMD_APP_START                 1
 #define CMD_SEND_TXT_MSG              2
@@ -62,8 +63,6 @@
 #define CMD_SET_DEFAULT_FLOOD_SCOPE   63
 #define CMD_GET_DEFAULT_FLOOD_SCOPE   64
 #define CMD_SEND_RAW_PACKET           65
-#define CMD_GET_RADIO_FEM_RXGAIN      66
-#define CMD_SET_RADIO_FEM_RXGAIN      67
 
 // Stats sub-types for CMD_GET_STATS
 #define STATS_TYPE_CORE               0
@@ -262,6 +261,36 @@ float MyMesh::getAirtimeBudgetFactor() const {
 
 int MyMesh::getInterferenceThreshold() const {
   return 0; // disabled for now, until currentRSSI() problem is resolved
+}
+bool MyMesh::getCADEnabled() const {
+  return false; // hardware CAD before TX (disabled by default, until configurable)
+}
+
+static void applyCompanionRxPowerSaving(uint8_t sf, float bw) {
+#ifdef WRAPPER_CLASS
+  RxPowerSavingControl* control = &radio_driver;
+
+  // setRxPowerSaving() rejects out-of-range periods without touching the
+  // wrapper's state, so on any failure we must explicitly stand the duty cycle
+  // down. Otherwise it would stay armed with the *previous* SF/BW timings -
+  // e.g. SF5/BW500 yields rx=655us (below the 1ms minimum), and the radio would
+  // keep sleeping in windows sized for SF11, missing every preamble.
+  uint32_t rx_us = 0;
+  uint32_t sleep_us = 0;
+  bool ok = calcRxPowerSavingLevel(RX_POWERSAVING_BALANCED_LEVEL, sf, bw,
+                                   RX_POWERSAVING_PROFILE_PREAMBLE, &rx_us, &sleep_us) &&
+            control->setRxPowerSaving(true, rx_us, sleep_us);
+  if (!ok) {
+    control->setRxPowerSaving(false, RX_POWERSAVING_DEFAULT_RX_US,
+                              RX_POWERSAVING_DEFAULT_SLEEP_US);
+  }
+  MESH_DEBUG_PRINTLN("RX Power Saving: companion level=5,preamble=16,rx=%lu,sleep=%lu,%s",
+                     (unsigned long)rx_us, (unsigned long)sleep_us,
+                     ok ? "accepted" : "unavailable - continuous RX");
+#else
+  (void)sf;
+  (void)bw;
+#endif
 }
 
 int MyMesh::calcRxDelay(float score, uint32_t air_time) const {
@@ -482,7 +511,7 @@ bool MyMesh::filterRecvFloodPacket(mesh::Packet* packet) {
 }
 
 bool MyMesh::allowPacketForward(const mesh::Packet* packet) {
-  return _prefs.client_repeat != 0;
+  return _prefs.isRepeatEn();
 }
 
 void MyMesh::sendFloodScoped(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis) {
@@ -655,6 +684,11 @@ uint8_t MyMesh::onContactRequest(const ContactInfo &contact, uint32_t sender_tim
       telemetry.addVoltage(TELEM_CHANNEL_SELF, (float)board.getBattMilliVolts() / 1000.0f);
       // query other sensors -- target specific
       sensors.querySensors(permissions, telemetry);
+
+      float temperature = board.getMCUTemperature();
+      if(!isnan(temperature)) { // Supported boards with built-in temperature sensor. ESP32-C3 may return NAN
+        telemetry.addTemperature(TELEM_CHANNEL_SELF, temperature); // Built-in MCU Temperature
+      }
 
       memcpy(reply, &sender_timestamp,
              4); // reflect sender_timestamp back in response packet (kind of like a 'tag')
@@ -856,7 +890,7 @@ void MyMesh::onSendTimeout() {}
 
 MyMesh::MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMeshTables &tables, DataStore& store, AbstractUITask* ui)
     : BaseChatMesh(radio, *new ArduinoMillis(), rng, rtc, *new StaticPoolPacketManager(16), tables),
-      _serial(NULL), telemetry(MAX_PACKET_PAYLOAD - 4), _store(&store), _ui(ui) {
+      _serial(NULL), telemetry(MAX_PACKET_PAYLOAD - 4), _store(&store), _ui(ui), _iter(0) {
   _iter_started = false;
   _cli_rescue = false;
   offline_queue_len = 0;
@@ -870,7 +904,6 @@ MyMesh::MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMe
   send_unscoped = false;
 
   // defaults
-  memset(&_prefs, 0, sizeof(_prefs));
   _prefs.airtime_factor = 1.0;
   strcpy(_prefs.node_name, "NONAME");
   _prefs.freq = LORA_FREQ;
@@ -880,7 +913,10 @@ MyMesh::MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMe
   _prefs.tx_power_dbm = LORA_TX_POWER;
   _prefs.gps_enabled = 0;       // GPS disabled by default
   _prefs.gps_interval = 0;      // No automatic GPS updates by default
+  _prefs.radio_fem_rxgain = 1;
+  _prefs.radio_fem_txgain = 0;
   //_prefs.rx_delay_base = 10.0f;  enable once new algo fixed
+  _prefs.setRepeatEn(false);
 #if defined(USE_SX1262) || defined(USE_SX1268)
 #ifdef SX126X_RX_BOOSTED_GAIN
   _prefs.rx_boosted_gain = SX126X_RX_BOOSTED_GAIN;
@@ -888,7 +924,6 @@ MyMesh::MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMe
   _prefs.rx_boosted_gain = 1; // enabled by default
 #endif
 #endif
-  _prefs.radio_fem_rxgain = 1;
 }
 
 void MyMesh::begin(bool has_display) {
@@ -926,7 +961,9 @@ void MyMesh::begin(bool has_display) {
 #endif
 
   // load persisted prefs
-  _store->loadPrefs(_prefs, sensors.node_lat, sensors.node_lon);
+  _store->loadPrefs(_prefs);
+  sensors.node_lat = _prefs.node_lat;
+  sensors.node_lon = _prefs.node_lon;
 
   // sanitise bad pref values
   _prefs.rx_delay_base = constrain(_prefs.rx_delay_base, 0, 20.0f);
@@ -938,7 +975,6 @@ void MyMesh::begin(bool has_display) {
   _prefs.tx_power_dbm = constrain(_prefs.tx_power_dbm, -9, MAX_LORA_TX_POWER);
   _prefs.gps_enabled = constrain(_prefs.gps_enabled, 0, 1);  // Ensure boolean 0 or 1
   _prefs.gps_interval = constrain(_prefs.gps_interval, 0, 86400);  // Max 24 hours
-  _prefs.radio_fem_rxgain = constrain(_prefs.radio_fem_rxgain, 0, 1);
 
 #ifdef BLE_PIN_CODE // 123456 by default
   if (_prefs.ble_pin == 0) {
@@ -969,8 +1005,10 @@ void MyMesh::begin(bool has_display) {
   radio_driver.setTxPower(_prefs.tx_power_dbm);
   radio_driver.setRxBoostedGainMode(_prefs.rx_boosted_gain);
   board.setLoRaFemLnaEnabled(_prefs.radio_fem_rxgain);
+  board.setLoRaFemPaGainEnabled(_prefs.radio_fem_txgain);
   MESH_DEBUG_PRINTLN("RX Boosted Gain Mode: %s",
                      radio_driver.getRxBoostedGainMode() ? "Enabled" : "Disabled");
+  applyCompanionRxPowerSaving(_prefs.sf, _prefs.bw);
 }
 
 const char *MyMesh::getNodeName() {
@@ -1028,7 +1066,7 @@ void MyMesh::handleCmdFrame(size_t len) {
     i += 40;
     StrHelper::strzcpy((char *)&out_frame[i], FIRMWARE_VERSION, 20);
     i += 20;
-    out_frame[i++] = _prefs.client_repeat;   // v9+
+    out_frame[i++] = _prefs.isRepeatEn() ? 1 : 0;   // v9+
     out_frame[i++] = _prefs.path_hash_mode;  // v10+
     _serial->writeFrame(out_frame, i);
   } else if (cmd_frame[0] == CMD_APP_START &&
@@ -1390,10 +1428,11 @@ void MyMesh::handleCmdFrame(size_t len) {
       _prefs.cr = cr;
       _prefs.freq = (float)freq / 1000.0;
       _prefs.bw = (float)bw / 1000.0;
-      _prefs.client_repeat = repeat;
+      _prefs.setRepeatEn(repeat != 0);
       savePrefs();
 
       radio_driver.setParams(_prefs.freq, _prefs.bw, _prefs.sf, _prefs.cr);
+      applyCompanionRxPowerSaving(_prefs.sf, _prefs.bw);
       MESH_DEBUG_PRINTLN("OK: CMD_SET_RADIO_PARAMS: f=%d, bw=%d, sf=%d, cr=%d", freq, bw, (uint32_t)sf,
                          (uint32_t)cr);
 
@@ -1547,6 +1586,7 @@ void MyMesh::handleCmdFrame(size_t len) {
       memcpy(anon.id.pub_key, pub_key, PUB_KEY_SIZE);
       anon.out_path_len = 0;   // default to zero-hop direct
       anon.type = ADV_TYPE_NONE;  // unknown
+      anon.lastmod = getRTCClock()->getCurrentTime();
 
       if (addContact(anon)) recipient = &anon;
     }
@@ -1641,6 +1681,11 @@ void MyMesh::handleCmdFrame(size_t len) {
   } else if (cmd_frame[0] == CMD_SEND_TELEMETRY_REQ && len == 4) {  // 'self' telemetry request
     telemetry.reset();
     telemetry.addVoltage(TELEM_CHANNEL_SELF, (float)board.getBattMilliVolts() / 1000.0f);
+    float temperature = board.getMCUTemperature();
+    if(!isnan(temperature)) { // Supported boards with built-in temperature sensor. ESP32-C3 may return NAN
+      telemetry.addTemperature(TELEM_CHANNEL_SELF, temperature); // Built-in MCU Temperature
+    }
+
     // query other sensors -- target specific
     sensors.querySensors(0xFF, telemetry);
 
@@ -1822,30 +1867,6 @@ void MyMesh::handleCmdFrame(size_t len) {
         writeOKFrame();
       } else {
         writeErrFrame(ERR_CODE_ILLEGAL_ARG);
-      }
-    } else {
-      writeErrFrame(ERR_CODE_ILLEGAL_ARG);
-    }
-  } else if (cmd_frame[0] == CMD_GET_RADIO_FEM_RXGAIN) {
-    if (!board.canControlLoRaFemLna()) {
-      writeErrFrame(ERR_CODE_UNSUPPORTED_CMD);
-    } else {
-      out_frame[0] = RESP_CODE_OK;
-      uint8_t value = board.isLoRaFemLnaEnabled() ? 1 : 0;
-      memcpy(&out_frame[1], &value, 1);
-      _serial->writeFrame(out_frame, 2);
-    }
-  } else if (cmd_frame[0] == CMD_SET_RADIO_FEM_RXGAIN && len >= 2) {
-    uint8_t value = cmd_frame[1];
-    if (!board.canControlLoRaFemLna()) {
-      writeErrFrame(ERR_CODE_UNSUPPORTED_CMD);
-    } else if (value <= 1) {
-      _prefs.radio_fem_rxgain = value;
-      if (board.setLoRaFemLnaEnabled(value != 0)) {
-        savePrefs();
-        writeOKFrame();
-      } else {
-        writeErrFrame(ERR_CODE_UNSUPPORTED_CMD);
       }
     } else {
       writeErrFrame(ERR_CODE_ILLEGAL_ARG);
@@ -2216,15 +2237,7 @@ void MyMesh::checkSerialInterface() {
              && !_serial->isWriteBusy() // don't spam the Serial Interface too quickly!
   ) {
     ContactInfo contact;
-    bool found = false;
-    while (_iter.hasNext(this, contact)) {
-      if (contact.type != ADV_TYPE_NONE) {
-        found = true;
-        break;
-      }
-    }
-
-    if (found) {
+    if (_iter.hasNext(this, contact)) {
       if (contact.lastmod > _iter_filter_since) { // apply the 'since' filter
         writeContactRespFrame(RESP_CODE_CONTACT, contact);
         if (contact.lastmod > _most_recent_lastmod) {
@@ -2280,5 +2293,10 @@ bool MyMesh::advert() {
 
 // To check if there is pending work
 bool MyMesh::hasPendingWork() const {
-  return _mgr->getOutboundTotal() > 0 || dirty_contacts_expiry != 0;
+  bool calibration_active = false;
+#ifdef WRAPPER_CLASS
+  const RxPowerSavingControl* rxps_control = &radio_driver;
+  calibration_active = rxps_control->isRxPowerSavingCalibrationActive();
+#endif
+  return _mgr->getOutboundTotal() > 0 || dirty_contacts_expiry != 0 || calibration_active;
 }

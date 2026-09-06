@@ -20,12 +20,13 @@ class ESP32Board : public mesh::MainBoard {
 protected:
   uint8_t startup_reason;
   bool inhibit_sleep = false;
+  uint32_t inhibit_sleep_until = 0;
   static inline portMUX_TYPE sleepMux = portMUX_INITIALIZER_UNLOCKED;
 
 public:
   void begin() {
     // for future use, sub-classes SHOULD call this from their begin()
-    startup_reason = BD_STARTUP_NORMAL;    
+    startup_reason = BD_STARTUP_NORMAL;
 
   #ifdef ESP32_CPU_FREQ
     setCpuFrequencyMhz(ESP32_CPU_FREQ);
@@ -63,30 +64,8 @@ public:
     return raw / 4;
   }
 
-  void powerOff() override {
-    enterDeepSleep(0); // Do not wakeup
-  }
-
-  void enterDeepSleep(uint32_t secs) {
-    // Clear stale wakeup sources to avoid ghost wakeup
-    // This is required when Power Management and automatic lightsleep are enabled
-    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-
-    if (secs > 0) {
-      esp_sleep_enable_timer_wakeup(secs * 1000000ULL);
-    }
-
-    // Keep LoRa inactive during deepsleep
-    digitalWrite(P_LORA_NSS, HIGH);
-#if CONFIG_IDF_TARGET_ESP32C3
-    gpio_hold_en((gpio_num_t)P_LORA_NSS);
-#else
-    rtc_gpio_hold_en((gpio_num_t)P_LORA_NSS);
-#endif
-
-    // Finally set ESP32 into deepsleep
-    esp_deep_sleep_start();   // CPU halts here and never returns!
-  }
+  virtual void powerOff() override;
+  void enterDeepSleep(uint32_t secs);
 
   uint32_t getIRQGpio() override {
     return P_LORA_DIO_1; // default for SX1262
@@ -94,13 +73,13 @@ public:
 
   void sleep(uint32_t secs) override {
     // Skip if not allow to sleep
-    if (inhibit_sleep) {
+    if (inhibit_sleep || (int32_t)(inhibit_sleep_until - millis()) > 0) {
       delay(1); // Give MCU to OTA to run
       return;
     }
 
     // Set GPIO wakeup
-    gpio_num_t wakeupPin = (gpio_num_t)getIRQGpio();    
+    gpio_num_t wakeupPin = (gpio_num_t)getIRQGpio();
 
     // Configure timer wakeup
     if (secs > 0) {
@@ -119,7 +98,10 @@ public:
 
     // Configure GPIO wakeup
     esp_sleep_enable_gpio_wakeup();
-    gpio_wakeup_enable((gpio_num_t)wakeupPin, GPIO_INTR_HIGH_LEVEL); // Wake up when receiving a LoRa packet
+    gpio_wakeup_enable(wakeupPin, GPIO_INTR_HIGH_LEVEL); // Wake up when receiving a LoRa packet
+#if defined(PIN_USER_BTN) && (PIN_USER_BTN >= 0)
+    gpio_wakeup_enable((gpio_num_t)PIN_USER_BTN, GPIO_INTR_LOW_LEVEL); // Wakeup when pressing button
+#endif
 
     // MCU enters light sleep
     esp_light_sleep_start();
@@ -127,6 +109,15 @@ public:
     // Avoid ISR flood during wakeup due to HIGH LEVEL interrupt
     gpio_wakeup_disable(wakeupPin);
     gpio_set_intr_type(wakeupPin, GPIO_INTR_POSEDGE);
+#if defined(PIN_USER_BTN) && (PIN_USER_BTN >= 0)
+    gpio_wakeup_disable((gpio_num_t)PIN_USER_BTN);
+    gpio_set_intr_type((gpio_num_t)PIN_USER_BTN, GPIO_INTR_POSEDGE);
+
+    // Check if waken up by PIN_USER_BTN
+    if (gpio_get_level((gpio_num_t)PIN_USER_BTN) == LOW) {
+        inhibit_sleep_until = millis() + 30000; // Do not sleep in the next 30s. Should be longer than OLED timeout
+    }
+#endif
 
     // Enable CPU interrupt servicing
     portEXIT_CRITICAL(&sleepMux);
@@ -187,34 +178,34 @@ public:
   }
 
   // https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32/api-reference/system/system.html
-  const char *getResetReasonString(uint32_t reason) {
+  const char* getResetReasonString(uint32_t reason) {
     switch (reason) {
-    case ESP_RST_UNKNOWN:
-      return "Unknown or first boot";
-    case ESP_RST_POWERON:
-      return "Power-on reset";
-    case ESP_RST_EXT:
-      return "External reset";
-    case ESP_RST_SW:
-      return "Software reset";
-    case ESP_RST_PANIC:
-      return "Panic / exception reset";
-    case ESP_RST_INT_WDT:
-      return "Interrupt watchdog reset";
-    case ESP_RST_TASK_WDT:
-      return "Task watchdog reset";
-    case ESP_RST_WDT:
-      return "Other watchdog reset";
-    case ESP_RST_DEEPSLEEP:
-      return "Wake from deep sleep";
-    case ESP_RST_BROWNOUT:
-      return "Brownout (low voltage)";
-    case ESP_RST_SDIO:
-      return "SDIO reset";
-    default:
-      static char buf[40];
-      snprintf(buf, sizeof(buf), "Unknown reset reason (%d)", reason);
-      return buf;
+      case ESP_RST_UNKNOWN:
+        return "Unknown or first boot";
+      case ESP_RST_POWERON:
+        return "Power-on reset";
+      case ESP_RST_EXT:
+        return "External reset";
+      case ESP_RST_SW:
+        return "Software reset";
+      case ESP_RST_PANIC:
+        return "Panic / exception reset";
+      case ESP_RST_INT_WDT:
+        return "Interrupt watchdog reset";
+      case ESP_RST_TASK_WDT:
+        return "Task watchdog reset";
+      case ESP_RST_WDT:
+        return "Other watchdog reset";
+      case ESP_RST_DEEPSLEEP:
+        return "Wake from deep sleep";
+      case ESP_RST_BROWNOUT:
+        return "Brownout (low voltage)";
+      case ESP_RST_SDIO:
+        return "SDIO reset";
+      default:
+        static char buf[40];
+        snprintf(buf, sizeof(buf), "Unknown reset reason (%d)", reason);
+        return buf;
     }
   }
 };

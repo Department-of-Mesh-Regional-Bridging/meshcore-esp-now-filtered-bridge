@@ -3,6 +3,7 @@
 #include "TxtDataHelpers.h"
 #include "AdvertDataHelpers.h"
 #include "TxtDataHelpers.h"
+#include "radiolib/RXPowerSavingCLI.h"
 #include <RTClib.h>
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -30,16 +31,25 @@ static bool isValidName(const char *n) {
 }
 
 void CommonCLI::loadPrefs(FILESYSTEM* fs) {
-  if (fs->exists("/com_prefs")) {
-    loadPrefsInt(fs, "/com_prefs");   // new filename
-  } else if (fs->exists("/node_prefs")) {
-    loadPrefsInt(fs, "/node_prefs");
-    savePrefs(fs);  // save to new filename
-    fs->remove("/node_prefs");  // remove old
+  if (fs->exists("/prefs.json")) {
+#if defined(RP2040_PLATFORM)
+    File file = fs->open("/prefs.json", "r");
+#else
+    File file = fs->open("/prefs.json");
+#endif
+    if (file) {
+      _prefs->loadSerial(file);   // new Serial prefs
+      file.close();
+    }
+  } else if (fs->exists("/com_prefs")) {
+    loadPrefsInt(fs, "/com_prefs");
+    if (savePrefs(fs)) {  // save to new Serial prefs
+  //    fs->remove("/com_prefs");  // remove old
+    }
   }
 }
 
-void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
+void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {  // Legacy prefs loader
 #if defined(RP2040_PLATFORM)
   File file = fs->open(filename, "r");
 #else
@@ -91,12 +101,13 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     file.read((uint8_t *)&_prefs->discovery_mod_timestamp, sizeof(_prefs->discovery_mod_timestamp)); // 162
     file.read((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
     file.read((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
-    file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    file.read((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));   // 291
-    file.read((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));       // 292
-    file.read((uint8_t *)&_prefs->radio_fem_rxgain, sizeof(_prefs->radio_fem_rxgain));            // 293
-    file.read((uint8_t *)&_prefs->bridge_filter_policy, sizeof(_prefs->bridge_filter_policy));    // 294
-    // next: 304
+    file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));               // 290
+    file.read((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));         // 291
+    file.read((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));             // 292
+    file.read((uint8_t *)&_prefs->radio_fem_rxgain, sizeof(_prefs->radio_fem_rxgain));             // 293
+    file.read((uint8_t *)&_prefs->bridge_filter_policy, sizeof(_prefs->bridge_filter_policy));     // 294
+    file.read((uint8_t *)&_prefs->cad_enabled, sizeof(_prefs->cad_enabled));                       // 304
+    // next: 305
 
     // sanitise bad pref values
     _prefs->rx_delay_base = constrain(_prefs->rx_delay_base, 0, 20.0f);
@@ -128,76 +139,28 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     // sanitise settings
     _prefs->rx_boosted_gain = constrain(_prefs->rx_boosted_gain, 0, 1); // boolean
     _prefs->radio_fem_rxgain = constrain(_prefs->radio_fem_rxgain, 0, 1); // boolean
+    _prefs->radio_fem_txgain = constrain(_prefs->radio_fem_txgain, 0, 1); // boolean
+    _prefs->cad_enabled = constrain(_prefs->cad_enabled, 0, 1); // boolean
 
     file.close();
   }
 }
 
-void CommonCLI::savePrefs(FILESYSTEM* fs) {
+bool CommonCLI::savePrefs(FILESYSTEM* fs) {
 #if defined(NRF52_PLATFORM) || defined(STM32_PLATFORM)
-  fs->remove("/com_prefs");
-  File file = fs->open("/com_prefs", FILE_O_WRITE);
+  fs->remove("/prefs.json");
+  File file = fs->open("/prefs.json", FILE_O_WRITE);
 #elif defined(RP2040_PLATFORM)
-  File file = fs->open("/com_prefs", "w");
+  File file = fs->open("/prefs.json", "w");
 #else
-  File file = fs->open("/com_prefs", "w", true);
+  File file = fs->open("/prefs.json", "w", true);
 #endif
   if (file) {
-    uint8_t pad[8];
-    memset(pad, 0, sizeof(pad));
-
-    file.write((uint8_t *)&_prefs->airtime_factor, sizeof(_prefs->airtime_factor));    // 0
-    file.write((uint8_t *)&_prefs->node_name, sizeof(_prefs->node_name));              // 4
-    file.write(pad, 4);                                                                // 36
-    file.write((uint8_t *)&_prefs->node_lat, sizeof(_prefs->node_lat));                // 40
-    file.write((uint8_t *)&_prefs->node_lon, sizeof(_prefs->node_lon));                // 48
-    file.write((uint8_t *)&_prefs->password[0], sizeof(_prefs->password));             // 56
-    file.write((uint8_t *)&_prefs->freq, sizeof(_prefs->freq));                        // 72
-    file.write((uint8_t *)&_prefs->tx_power_dbm, sizeof(_prefs->tx_power_dbm));        // 76
-    file.write((uint8_t *)&_prefs->disable_fwd, sizeof(_prefs->disable_fwd));          // 77
-    file.write((uint8_t *)&_prefs->advert_interval, sizeof(_prefs->advert_interval));  // 78
-    file.write(pad, 1);                                                                // 79 : 1 byte unused (rx_boosted_gain moved to end)
-    file.write((uint8_t *)&_prefs->rx_delay_base, sizeof(_prefs->rx_delay_base));      // 80
-    file.write((uint8_t *)&_prefs->tx_delay_factor, sizeof(_prefs->tx_delay_factor));  // 84
-    file.write((uint8_t *)&_prefs->guest_password[0], sizeof(_prefs->guest_password)); // 88
-    file.write((uint8_t *)&_prefs->direct_tx_delay_factor, sizeof(_prefs->direct_tx_delay_factor)); // 104
-    file.write(pad, 4); // 108 : 4 byte unused
-    file.write((uint8_t *)&_prefs->sf, sizeof(_prefs->sf));                                         // 112
-    file.write((uint8_t *)&_prefs->cr, sizeof(_prefs->cr));                                         // 113
-    file.write((uint8_t *)&_prefs->allow_read_only, sizeof(_prefs->allow_read_only));               // 114
-    file.write((uint8_t *)&_prefs->multi_acks, sizeof(_prefs->multi_acks));                         // 115
-    file.write((uint8_t *)&_prefs->bw, sizeof(_prefs->bw));                                         // 116
-    file.write((uint8_t *)&_prefs->agc_reset_interval, sizeof(_prefs->agc_reset_interval));         // 120
-    file.write((uint8_t *)&_prefs->path_hash_mode, sizeof(_prefs->path_hash_mode));                 // 121
-    file.write((uint8_t *)&_prefs->loop_detect, sizeof(_prefs->loop_detect));                       // 122
-    file.write(pad, 1);                                                                             // 123
-    file.write((uint8_t *)&_prefs->flood_max, sizeof(_prefs->flood_max));                           // 124
-    file.write((uint8_t *)&_prefs->flood_advert_interval, sizeof(_prefs->flood_advert_interval));   // 125
-    file.write((uint8_t *)&_prefs->interference_threshold, sizeof(_prefs->interference_threshold)); // 126
-    file.write((uint8_t *)&_prefs->bridge_enabled, sizeof(_prefs->bridge_enabled));                 // 127
-    file.write((uint8_t *)&_prefs->bridge_delay, sizeof(_prefs->bridge_delay));                     // 128
-    file.write((uint8_t *)&_prefs->bridge_pkt_src, sizeof(_prefs->bridge_pkt_src));                 // 130
-    file.write((uint8_t *)&_prefs->bridge_baud, sizeof(_prefs->bridge_baud));                       // 131
-    file.write((uint8_t *)&_prefs->bridge_channel, sizeof(_prefs->bridge_channel));                 // 135
-    file.write((uint8_t *)&_prefs->bridge_secret, sizeof(_prefs->bridge_secret));                   // 136
-    file.write((uint8_t *)&_prefs->powersaving_enabled, sizeof(_prefs->powersaving_enabled));       // 152
-    file.write((uint8_t *)&_prefs->reboot_interval, sizeof(_prefs->reboot_interval));               // 153
-    file.write(pad, 2);                                                                             // 154
-    file.write((uint8_t *)&_prefs->gps_enabled, sizeof(_prefs->gps_enabled));                       // 156
-    file.write((uint8_t *)&_prefs->gps_interval, sizeof(_prefs->gps_interval));                     // 157
-    file.write((uint8_t *)&_prefs->advert_loc_policy, sizeof(_prefs->advert_loc_policy));           // 161
-    file.write((uint8_t *)&_prefs->discovery_mod_timestamp, sizeof(_prefs->discovery_mod_timestamp)); // 162
-    file.write((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
-    file.write((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
-    file.write((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    file.write((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));   // 291
-    file.write((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));       // 292
-    file.write((uint8_t *)&_prefs->radio_fem_rxgain, sizeof(_prefs->radio_fem_rxgain));            // 293
-    file.write((uint8_t *)&_prefs->bridge_filter_policy, sizeof(_prefs->bridge_filter_policy));    // 294
-    // next: 304
-
+    bool success = _prefs->saveSerial(file);
     file.close();
+    return success;
   }
+  return false;
 }
 
 #define MIN_LOCAL_ADVERT_INTERVAL   60
@@ -367,7 +330,12 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
       if (_sensors->setSettingValue("gps", "1")) {
         _prefs->gps_enabled = 1;
         savePrefs();
-        strcpy(reply, "ok");
+
+        if (_prefs->powersaving_enabled) { // Power Saving
+          strcpy(reply, "on (powersaving)");
+        } else { // Normal mode
+          strcpy(reply, "ok");
+        }
       } else {
         strcpy(reply, "gps toggle not found");
       }
@@ -383,7 +351,7 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
       LocationProvider * l = _sensors->getLocationProvider();
       if (l != NULL) {
         l->syncTime();
-        strcpy(reply, "ok");
+        strcpy(reply, "scheduled");
       } else {
         strcpy(reply, "gps provider not found");
       }
@@ -428,14 +396,41 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
         bool enabled = l->isEnabled(); // is EN pin on ?
         bool fix = l->isValid();       // has fix ?
         int sats = l->satellitesCount();
-        bool active = !strcmp(_sensors->getSettingByKey("gps"), "1");
-        if (enabled) {
-          sprintf(reply, "on, %s, %s, %d sats",
-            active?"active":"deactivated",
-            fix?"fix":"no fix",
-            sats);
-        } else {
-          strcpy(reply, "off");
+        bool active = !strcmp(_sensors->getSettingByKey("gps") ?: "0", "1"); // Use "0" if GPS setting is not found
+
+        if (_prefs->powersaving_enabled && l->isPowerSavingEnabled()) { // GPS Power Saving
+          if (enabled) {
+            unsigned long mins = (l->getNextSleep() - millis()) / 60000UL;
+            sprintf(reply, "on (powersaving, sleep in %luh %lum), %s, %s, %d sats", 
+              mins / 60UL, 
+              mins % 60UL,
+              active ? "active" : "deactivated", 
+              fix ? "fix" : "no fix", 
+              sats);
+          } else {
+            unsigned long mins = (l->getNextWake() - millis()) / 60000UL;
+            sprintf(reply, "off (powersaving, wake in %luh %lum)",
+              mins / 60UL,
+              mins % 60UL);
+          }
+
+          // "last sync" from GPS
+          DateTime dt = DateTime(l->getLastValidTimeSync());
+          if (dt.unixtime() == 0) {
+            sprintf(reply + strlen(reply), ", last sync: none");
+          } else {
+            sprintf(reply + strlen(reply), ", last sync: %02d:%02d - %d/%d/%d UTC", dt.hour(), dt.minute(),
+                    dt.day(), dt.month(), dt.year());
+          }
+        } else { // Normal mode
+          if (enabled) {
+            sprintf(reply, "on, %s, %s, %d sats",
+              active?"active":"deactivated",
+              fix?"fix":"no fix",
+              sats);
+          } else {
+            strcpy(reply, "off");
+          }
         }
       } else {
         strcpy(reply, "Can't find GPS");
@@ -444,10 +439,12 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
     } else if (memcmp(command, "powersaving on", 14) == 0) {
 #if defined(NRF52_PLATFORM)
       _prefs->powersaving_enabled = 1;
+      _sensors->powersaving_enabled = 1;
       savePrefs();
       strcpy(reply, "on - Immediate effect");
 #elif defined(ESP32) && !defined(WITH_BRIDGE)
       _prefs->powersaving_enabled = 1;
+      _sensors->powersaving_enabled = 1;
       savePrefs();
       strcpy(reply, "on - After 2 minutes");
 #elif defined(WITH_BRIDGE)
@@ -457,6 +454,7 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, char* command, char* re
 #endif
     } else if (memcmp(command, "powersaving off", 15) == 0) {
       _prefs->powersaving_enabled = 0;
+      _sensors->powersaving_enabled = 0;
       savePrefs();
       strcpy(reply, "off");
     } else if (memcmp(command, "powersaving", 11) == 0) {
@@ -540,6 +538,10 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     _prefs->interference_threshold = atoi(&config[11]);
     savePrefs();
     strcpy(reply, "OK");
+  } else if (memcmp(config, "cad ", 4) == 0) {
+    _prefs->cad_enabled = memcmp(&config[4], "on", 2) == 0;
+    savePrefs();
+    strcpy(reply, "OK");
   } else if (memcmp(config, "agc.reset.interval ", 19) == 0) {
     _prefs->agc_reset_interval = atoi(&config[19]) / 4;
     savePrefs();
@@ -601,13 +603,15 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     _prefs->disable_fwd = memcmp(&config[7], "off", 3) == 0;
     savePrefs();
     strcpy(reply, _prefs->disable_fwd ? "OK - repeat is now OFF" : "OK - repeat is now ON");
-#if defined(USE_SX1262) || defined(USE_SX1268) || defined(USE_LR1110)
   } else if (memcmp(config, "radio.rxgain ", 13) == 0) {
-    _prefs->rx_boosted_gain = memcmp(&config[13], "on", 2) == 0;
-    strcpy(reply, "OK");
+    bool enabled = memcmp(&config[13], "on", 2) == 0;
+    _prefs->rx_boosted_gain = enabled;
     savePrefs();
-    _callbacks->setRxBoostedGain(_prefs->rx_boosted_gain);
-#endif
+    if (_callbacks->setRxBoostedGain(enabled)) {
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Error: unsupported");
+    }
   } else if (memcmp(config, "radio.fem.rxgain ", 17) == 0) {
     if (!_board->canControlLoRaFemLna()) {
       strcpy(reply, "Error: unsupported");
@@ -630,6 +634,35 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     } else {
       strcpy(reply, "Error: state must be on or off");
     }
+  } else if (memcmp(config, "radio.fem.txgain ", 17) == 0) {
+    if (!_board->canControlLoRaFemPaGain()) {
+      strcpy(reply, "Error: unsupported");
+    } else if (memcmp(&config[17], "on", 2) == 0) {
+      if (_board->setLoRaFemPaGainEnabled(true)) {
+        _prefs->radio_fem_txgain = 1;
+        savePrefs();
+        strcpy(reply, "OK - LoRa FEM TX gain on");
+      } else {
+        strcpy(reply, "Error: failed to apply LoRa FEM TX gain");
+      }
+    } else if (memcmp(&config[17], "off", 3) == 0) {
+      if (_board->setLoRaFemPaGainEnabled(false)) {
+        _prefs->radio_fem_txgain = 0;
+        savePrefs();
+        strcpy(reply, "OK - LoRa FEM TX gain off");
+      } else {
+        strcpy(reply, "Error: failed to apply LoRa FEM TX gain");
+      }
+    } else {
+      strcpy(reply, "Error: state must be on or off");
+    }
+  } else if (strncmp(config, "radio.rxps.rfrx_disabled ", 25) == 0) {
+    RXPowerSavingCLI::setRfRxDisabled(&config[25], _rxps_control, reply, 160);
+  } else if (memcmp(config, "radio.rxps ", 11) == 0) {
+    if (RXPowerSavingCLI::set(&config[11], _prefs->sf, _prefs->bw, &_prefs->rxps,
+                              _rxps_control, reply, 160)) {
+      savePrefs();
+    }
   } else if (memcmp(config, "radio ", 6) == 0) {
     strcpy(tmp, &config[6]);
     const char *parts[4];
@@ -643,8 +676,11 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
       _prefs->cr = cr;
       _prefs->freq = freq;
       _prefs->bw = bw;
+      bool rxps_retuned = recalcRxPowerSavingFromLevel(
+          _prefs->rxps.level, _prefs->sf, _prefs->bw, _prefs->rxps.preamble,
+          &_prefs->rxps.rx_us, &_prefs->rxps.sleep_us);
       _callbacks->savePrefs();
-      strcpy(reply, "OK - reboot to apply");
+      strcpy(reply, rxps_retuned ? "OK - reboot to apply (rxps retuned)" : "OK - reboot to apply");
     } else {
       strcpy(reply, "Error, invalid radio params");
     }
@@ -814,7 +850,7 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
   } else if (memcmp(config, "bridge.filter add advert", 24) == 0) {
     mesh::BridgeFilter::blockAdverts(_prefs->bridge_filter_policy);
     savePrefs();
-    strcpy(reply, "adverts blocked");
+    strcpy(reply, "advert blocked");
   } else if (memcmp(config, "bridge.filter add public", 24) == 0) {
     mesh::BridgeFilter::blockPublic(_prefs->bridge_filter_policy);
     savePrefs();
@@ -840,7 +876,7 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
   } else if (memcmp(config, "bridge.filter del advert", 24) == 0) {
     mesh::BridgeFilter::unblockAdverts(_prefs->bridge_filter_policy);
     savePrefs();
-    strcpy(reply, "adverts unblocked");
+    strcpy(reply, "advert unblocked");
   } else if (memcmp(config, "bridge.filter del public", 24) == 0) {
     mesh::BridgeFilter::unblockPublic(_prefs->bridge_filter_policy);
     savePrefs();
@@ -875,8 +911,30 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
       }
     } else {
       _prefs->adc_multiplier = 0.0f;
-      strcpy(reply, "Error: unsupported by this board");
+      strcpy(reply, "Error: unsupported");
     };
+  #if defined(USE_LR2021)
+  } else if (memcmp(config, "extra.sf ", 9) == 0) {
+    strcpy(tmp, &config[9]);
+    const char *parts[4];
+    uint8_t sideDetSFs[4];
+    int num = mesh::Utils::parseTextParts(tmp, parts, 4);
+    if (num > 3) {
+      sprintf(reply, "Invalid extra SF config");
+    } else {
+      for (int i = 0; i < num; i++) {
+        sideDetSFs[i] = atoi(parts[i]);
+      }
+      sideDetSFs[num] = 0;
+      if (_callbacks->configSideDetectors(sideDetSFs, num, _prefs->bw)) {
+        for (int i = 0; i <= num; i++) _prefs->extra_sf[i] = sideDetSFs[i];
+        savePrefs();
+        sprintf(reply, "OK - extra SFs set");
+      } else {
+        sprintf(reply, "Invalid extra SF config");
+      }
+    }
+  #endif
   } else if (memcmp(config, "reboot.interval ", 16) == 0) {
     int hours = _atoi(&config[16]);
     if (hours == 0) {
@@ -907,6 +965,8 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->airtime_factor));
   } else if (memcmp(config, "int.thresh", 10) == 0) {
     sprintf(reply, "> %d", (uint32_t) _prefs->interference_threshold);
+  } else if (memcmp(config, "cad", 3) == 0) {
+    sprintf(reply, "> %s. # channel busy: %u", _prefs->cad_enabled ? "on" : "off", _board->n_cad_busy);
   } else if (memcmp(config, "agc.reset.interval", 18) == 0) {
     sprintf(reply, "> %d", ((uint32_t) _prefs->agc_reset_interval) * 4);
   } else if (memcmp(config, "multi.acks", 10) == 0) {
@@ -932,16 +992,24 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->node_lat));
   } else if (memcmp(config, "lon", 3) == 0) {
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->node_lon));
-#if defined(USE_SX1262) || defined(USE_SX1268) || defined(USE_LR1110)
   } else if (memcmp(config, "radio.rxgain", 12) == 0) {
     sprintf(reply, "> %s", _prefs->rx_boosted_gain ? "on" : "off");
-#endif
   } else if (memcmp(config, "radio.fem.rxgain", 16) == 0) {
     if (!_board->canControlLoRaFemLna()) {
       strcpy(reply, "Error: unsupported");
     } else {
       sprintf(reply, "> %s", _board->isLoRaFemLnaEnabled() ? "on" : "off");
     }
+  } else if (memcmp(config, "radio.fem.txgain", 16) == 0) {
+    if (!_board->canControlLoRaFemPaGain()) {
+      strcpy(reply, "Error: unsupported");
+    } else {
+      sprintf(reply, "> %s", _board->isLoRaFemPaGainEnabled() ? "on" : "off");
+    }
+  } else if (strcmp(config, "radio.rxps.rfrx_disabled") == 0) {
+    RXPowerSavingCLI::getRfRxDisabled(_rxps_control, reply, 160);
+  } else if (strcmp(config, "radio.rxps") == 0) {
+    RXPowerSavingCLI::get(&_prefs->rxps, _rxps_control, reply, 160);
   } else if (memcmp(config, "radio", 5) == 0) {
     char freq[16], bw[16];
     strcpy(freq, StrHelper::ftoa(_prefs->freq));
@@ -1028,7 +1096,7 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
       sprintf(reply, "> blocked:");
 
       if (mesh::BridgeFilter::isAdvertsBlocked(_prefs->bridge_filter_policy)) {
-        sprintf(reply + strlen(reply), " adverts");
+        sprintf(reply + strlen(reply), " advert");
       }
 
       if (mesh::BridgeFilter::isPublicBlocked(_prefs->bridge_filter_policy)) {
@@ -1067,12 +1135,12 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
           strcpy(reply, "> unknown");
       }
   #else
-      strcpy(reply, "ERROR: unsupported");
+      strcpy(reply, "Error: unsupported");
   #endif
   } else if (memcmp(config, "adc.multiplier", 14) == 0) {
     float adc_mult = _board->getAdcMultiplier();
     if (adc_mult == 0.0f) {
-      strcpy(reply, "Error: unsupported by this board");
+      strcpy(reply, "Error: unsupported");
     } else {
       sprintf(reply, "> %.3f", adc_mult);
     }
@@ -1090,19 +1158,23 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     strcpy(reply, "ERROR: Power management not supported");
 #endif
   } else if (memcmp(config, "pwrmgt.bootreason", 17) == 0) {
-#ifdef NRF52_POWER_MANAGEMENT
     sprintf(reply, "> Reset: %s; Shutdown: %s",
       _board->getResetReasonString(_board->getResetReason()),
       _board->getShutdownReasonString(_board->getShutdownReason()));
-#else
-    strcpy(reply, "ERROR: Power management not supported");
-#endif
   } else if (memcmp(config, "pwrmgt.bootmv", 13) == 0) {
 #ifdef NRF52_POWER_MANAGEMENT
     sprintf(reply, "> %u mV", _board->getBootVoltage());
 #else
     strcpy(reply, "ERROR: Power management not supported");
 #endif
+  } else if (memcmp(config, "extra.sf", 8) == 0) {
+    char* tmp = reply;
+    for (int i = 0; i < 3 && _prefs->extra_sf[i] != 0; i++) {
+      tmp += sprintf(tmp, "%s%d", (i == 0) ? "" : ",", _prefs->extra_sf[i]);
+    } 
+    if (tmp == reply) {
+      sprintf(reply, "No extra SF configured");
+    }
   } else if (memcmp(config, "reboot.interval", 15) == 0) {
     if (_prefs->reboot_interval == 0) {
       strcpy(reply, "disabled");
