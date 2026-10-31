@@ -3,8 +3,9 @@
 #endif
 
 #include "BridgeFilter.h"
-#include <helpers/TransportKeyStore.h>
 #include <SHA256.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 namespace mesh {
   // Statistics
@@ -197,5 +198,62 @@ namespace mesh {
     }
 
     return false;
+  }
+
+  // CLI text
+  namespace {
+    // Appends formatted text to a fixed buffer without ever writing past it, while
+    // counting the length the complete text would need (like snprintf).
+    struct BoundedWriter {
+      char* out;
+      size_t cap;
+      size_t len = 0;   // length the full text needs, may exceed cap
+      BoundedWriter(char* o, size_t c) : out(o), cap(c) { if (cap > 0) out[0] = 0; }
+      void append(const char* fmt, ...) {
+        va_list ap;
+        va_start(ap, fmt);
+        size_t room = (len < cap) ? cap - len : 0;
+        int n = vsnprintf(room > 0 ? out + len : NULL, room, fmt, ap);
+        va_end(ap);
+        if (n > 0) len += (size_t)n;
+      }
+      // When the text did not fit, end the visible part with "..." so the reader knows.
+      size_t finish() {
+        if (len >= cap && cap >= 4) memcpy(out + cap - 4, "...", 4);
+        return len;
+      }
+    };
+  }
+
+  size_t BridgeFilter::formatPolicy(const BridgeFilterPolicy& policy, char* out, size_t out_len) {
+    BoundedWriter w(out, out_len);
+    if (!isPolicyEnabled(policy)) {
+      w.append("> blocked: none");
+    } else {
+      w.append("> blocked:");
+      if (isAdvertsBlocked(policy)) w.append(" advert");
+      if (isPublicBlocked(policy)) w.append(" public");
+      for (uint8_t i = 0; i < policy.blockedFirstBytesCount; i++) {
+        w.append(" %02x", policy.blockedFirstBytes[i]);
+      }
+      for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
+        w.append(" %.*s (%02x%02x%02x)", BRIDGE_FILTER_BLOCKEDHTAGS_LEN - 1, policy.blockedHTags[i],
+                 policy.blockedPSKs[i][0], policy.blockedPSKs[i][1], policy.blockedPSKs[i][2]);
+      }
+    }
+    w.append("\r\n? for help");
+    return w.finish();
+  }
+
+  size_t BridgeFilter::formatStats(const BridgeFilterPolicy& policy, char* out, size_t out_len) {
+    BoundedWriter w(out, out_len);
+    w.append("> TX: %lu sent, %lu blocked. RX: %lu received, %lu blocked.",
+             (unsigned long)bridgefilter_stats_tx_sent, (unsigned long)bridgefilter_stats_tx_blocked,
+             (unsigned long)bridgefilter_stats_rx_received, (unsigned long)bridgefilter_stats_rx_blocked);
+    for (uint8_t i = 0; i < policy.blockedHTagCount; i++) {
+      w.append(" %.*s: %lu blocked.", BRIDGE_FILTER_BLOCKEDHTAGS_LEN - 1, policy.blockedHTags[i],
+               (unsigned long)bridgefilter_stats_htag_blocked[i]);
+    }
+    return w.finish();
   }
 } // namespace mesh

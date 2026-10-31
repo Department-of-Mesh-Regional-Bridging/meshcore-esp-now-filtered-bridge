@@ -69,5 +69,11 @@ namespace mesh {
     static bool addBlockedHTag(BridgeFilterPolicy& policy, const char* htag);
     static bool deleteBlockedHTag(BridgeFilterPolicy &policy, const char* htag);
 
+    // CLI text. Both write at most out_len bytes (always NUL-terminated) and return
+    // the length the complete text needs, like snprintf, so a return value >= out_len
+    // means the text was cut; a cut text ends in "..." so the reader can tell.
+    static size_t formatPolicy(const BridgeFilterPolicy& policy, char* out, size_t out_len);
+    static size_t formatStats(const BridgeFilterPolicy& policy, char* out, size_t out_len);
+
   }; // BridgeFilter
 } // namespace mesh
