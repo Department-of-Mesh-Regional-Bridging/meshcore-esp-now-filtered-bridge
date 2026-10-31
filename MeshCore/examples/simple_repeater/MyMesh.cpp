@@ -528,14 +528,7 @@ void MyMesh::logRx(mesh::Packet *pkt, int len, float score) {
 void MyMesh::logTx(mesh::Packet *pkt, int len) {
 #ifdef WITH_BRIDGE
   if (_prefs.bridge_pkt_src == 0) {
-    if (mesh::BridgeFilter::isPacketAllowed(_prefs.bridge_filter_policy, pkt)) {
-      bridge.sendPacket(pkt);
-      BRIDGEFILTER_DEBUG_PRINTLN("Sent packet to bridge");
-      mesh::BridgeFilter::bridgefilter_stats_tx_sent++; // Statistics
-    } else {
-      BRIDGEFILTER_DEBUG_PRINTLN("Dropped packet to bridge");
-      mesh::BridgeFilter::bridgefilter_stats_tx_blocked++; // Statistics
-    }
+    bridge.sendPacket(pkt);   // the bridge applies the filter policy
   }
 #endif
 

@@ -31,6 +31,17 @@ bool BridgeBase::validateChecksum(const uint8_t *data, size_t len, uint16_t rece
   return received_checksum == calculated_checksum;
 }
 
+bool BridgeBase::allowOutbound(mesh::Packet *packet) {
+  if (mesh::BridgeFilter::isPacketAllowed(_prefs->bridge_filter_policy, packet)) {
+    BRIDGEFILTER_DEBUG_PRINTLN("Sent packet to bridge");
+    mesh::BridgeFilter::bridgefilter_stats_tx_sent++; // Statistics
+    return true;
+  }
+  BRIDGEFILTER_DEBUG_PRINTLN("Dropped packet to bridge");
+  mesh::BridgeFilter::bridgefilter_stats_tx_blocked++; // Statistics
+  return false;
+}
+
 void BridgeBase::handleReceivedPacket(mesh::Packet *packet) {
   BRIDGEFILTER_DEBUG_PRINTLN("Received packet from bridge");
   mesh::BridgeFilter::bridgefilter_stats_rx_received++; // Statistics

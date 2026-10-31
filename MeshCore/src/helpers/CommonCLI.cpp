@@ -1078,43 +1078,9 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
   } else if (memcmp(config, "bridge.filter?", 14) == 0) {
     sprintf(reply, "> clear, add/del public/advert/<1-byte hash>/<htag>");
   } else if (memcmp(config, "bridge.filter stats", 19) == 0) {
-    sprintf(reply, "> TX: %d sent, %d blocked. RX: %d received, %d blocked.", 
-            mesh::BridgeFilter::bridgefilter_stats_tx_sent,
-            mesh::BridgeFilter::bridgefilter_stats_tx_blocked,
-            mesh::BridgeFilter::bridgefilter_stats_rx_received,
-            mesh::BridgeFilter::bridgefilter_stats_rx_blocked);
-
-    for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedHTagCount; i++) {
-      sprintf(reply + strlen(reply), " %s: %u blocked.",
-              (char *)_prefs->bridge_filter_policy.blockedHTags[i],
-              mesh::BridgeFilter::bridgefilter_stats_htag_blocked[i]);
-    }
+    mesh::BridgeFilter::formatStats(_prefs->bridge_filter_policy, reply, 160);
   } else if (memcmp(config, "bridge.filter", 13) == 0) {
-    if (!mesh::BridgeFilter::isPolicyEnabled(_prefs->bridge_filter_policy)) {
-      sprintf(reply, "> blocked: none");
-    } else {
-      sprintf(reply, "> blocked:");
-
-      if (mesh::BridgeFilter::isAdvertsBlocked(_prefs->bridge_filter_policy)) {
-        sprintf(reply + strlen(reply), " advert");
-      }
-
-      if (mesh::BridgeFilter::isPublicBlocked(_prefs->bridge_filter_policy)) {
-        sprintf(reply + strlen(reply), " public");
-      }
-
-      for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedFirstBytesCount; i++) {
-        sprintf(reply + strlen(reply), " %02x", _prefs->bridge_filter_policy.blockedFirstBytes[i]);
-      }
-
-      for (uint8_t i = 0; i < _prefs->bridge_filter_policy.blockedHTagCount; i++) {
-        sprintf(
-            reply + strlen(reply), " %s (%02x%02x%02x)", (char *)_prefs->bridge_filter_policy.blockedHTags[i],
-            _prefs->bridge_filter_policy.blockedPSKs[i][0], _prefs->bridge_filter_policy.blockedPSKs[i][1],
-            _prefs->bridge_filter_policy.blockedPSKs[i][2]);
-      }
-    }
-    sprintf(reply + strlen(reply), "\r\n? for help");
+    mesh::BridgeFilter::formatPolicy(_prefs->bridge_filter_policy, reply, 160);
 #endif
 #ifdef WITH_RS232_BRIDGE
   } else if (memcmp(config, "bridge.baud", 11) == 0) {

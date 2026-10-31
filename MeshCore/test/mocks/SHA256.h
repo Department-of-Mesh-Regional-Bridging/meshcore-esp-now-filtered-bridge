@@ -31,5 +31,7 @@ public:
   }
 
   void resetHMAC(const uint8_t* key, size_t keyLen) {}
-  void finalizeHMAC(const uint8_t* key, size_t keyLen, uint8_t* hash, size_t hashLen) {}
+  // Deterministic stand-in: the HMAC is always all zeros, so a packet whose MAC
+  // bytes are zero "verifies" under any key and any other MAC fails.
+  void finalizeHMAC(const uint8_t* key, size_t keyLen, uint8_t* hash, size_t hashLen) { memset(hash, 0, hashLen); }
 };

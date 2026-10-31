@@ -39,6 +39,10 @@ namespace mesh {
 
     // Policy
     static bool isPacketAllowed(const BridgeFilterPolicy& policy, mesh::Packet *pkt);
+
+    // First byte of the channel hash MeshCore puts in front of every group message
+    // for this channel secret (same rule as BaseChatMesh::setChannel).
+    static uint8_t channelHashByte(const uint8_t secret[PUB_KEY_SIZE]);
     static bool isPolicyEnabled(const BridgeFilterPolicy &policy) {
       return policy.policy > 0 || policy.blockedFirstBytesCount > 0 || policy.blockedHTagCount > 0;
     }
@@ -68,6 +72,12 @@ namespace mesh {
     static bool isBlockedHTag(const BridgeFilterPolicy &policy, const char* htag);
     static bool addBlockedHTag(BridgeFilterPolicy& policy, const char* htag);
     static bool deleteBlockedHTag(BridgeFilterPolicy &policy, const char* htag);
+
+    // CLI text. Both write at most out_len bytes (always NUL-terminated) and return
+    // the length the complete text needs, like snprintf, so a return value >= out_len
+    // means the text was cut; a cut text ends in "..." so the reader can tell.
+    static size_t formatPolicy(const BridgeFilterPolicy& policy, char* out, size_t out_len);
+    static size_t formatStats(const BridgeFilterPolicy& policy, char* out, size_t out_len);
 
   }; // BridgeFilter
 } // namespace mesh

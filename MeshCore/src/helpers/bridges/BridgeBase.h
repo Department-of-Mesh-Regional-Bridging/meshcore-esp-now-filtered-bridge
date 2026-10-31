@@ -118,4 +118,15 @@ protected:
    * @param packet The received mesh packet
    */
   void handleReceivedPacket(mesh::Packet *packet);
+
+  /**
+   * @brief Apply the bridge filter policy to a packet about to be sent over the bridge
+   *
+   * Counts the packet in the TX statistics. Called by sendPacket() implementations so
+   * the policy applies whichever hook (logTx or logRx) hands packets to the bridge.
+   *
+   * @param packet The mesh packet about to be transmitted
+   * @return true if the packet may cross the bridge, false if the policy drops it
+   */
+  bool allowOutbound(mesh::Packet *packet);
 };

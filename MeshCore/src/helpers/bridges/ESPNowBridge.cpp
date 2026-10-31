@@ -167,6 +167,11 @@ void ESPNowBridge::sendPacket(mesh::Packet *packet) {
     return;
   }
 
+  // Apply the filter policy here so it covers both bridge.source modes (logTx and logRx)
+  if (!allowOutbound(packet)) {
+    return;
+  }
+
   if (!_seen_packets.wasSeen(packet)) {
     _seen_packets.markSeen(packet);
     // Create a temporary buffer just for size calculation and reuse for actual writing
