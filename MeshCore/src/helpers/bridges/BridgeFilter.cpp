@@ -51,9 +51,7 @@ namespace mesh {
             return true;
           }
 
-          // Decoded message
-          char *message = (char *)&dest[5];
-          BRIDGEFILTER_DEBUG_PRINTLN("Public message: %s", message);
+          BRIDGEFILTER_DEBUG_PRINTLN("Public message, %d bytes", len);
           return false; // Block
         } else {        // Failed to decode
           BRIDGEFILTER_DEBUG_PRINTLN("Not Public message");
@@ -66,9 +64,7 @@ namespace mesh {
           uint8_t dest[MAX_PACKET_PAYLOAD];
           int len = mesh::Utils::MACThenDecrypt(policy.blockedPSKs[i], dest, &pkt->payload[1], pkt->payload_len - 1);
           if (len > 0) { // Able to decode
-            // Decoded message
-            char *message = (char *)&dest[5];
-            BRIDGEFILTER_DEBUG_PRINTLN("Hashtag %s message: %s", hashtag, message);
+            BRIDGEFILTER_DEBUG_PRINTLN("Hashtag %s message, %d bytes", hashtag, len);
 
             // Statistics
             bridgefilter_stats_htag_blocked[i]++;
